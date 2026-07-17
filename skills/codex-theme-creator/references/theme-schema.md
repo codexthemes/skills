@@ -22,6 +22,7 @@ These are mandatory defaults, not examples. A user may explicitly request a cust
   "mode": "light",
   "css": "theme.css",
   "art": "assets/artwork.png",
+  "preview": "previews/home-1440x900.png",
   "design": {
     "layoutMode": "native-background",
     "backgroundScope": "home",
@@ -57,6 +58,8 @@ These are mandatory defaults, not examples. A user may explicitly request a cust
 
 Omit `art` for `palette-only`. Paths must be relative and remain inside the theme directory. Increment `version` after every visible change.
 
+`preview` names a raster image (PNG, JPEG, or WebP) that shows the **themed workspace** — sidebar, header, and home content together — never the raw background artwork. It becomes the gallery and detail image on codexthemes.ai. When `preview` is omitted, export picks the best raster from `previews/` (files containing `1440` first); keep at least one real workspace capture there.
+
 ## Design fields
 
 - `layoutMode`: `native-background`, `native-immersive`, `editorial-showcase`, or `palette-only`.
@@ -85,8 +88,13 @@ A `.codex-theme` file is UTF-8 JSON, not a ZIP:
     "mimeType": "image/png",
     "base64": "..."
   },
+  "preview": {
+    "filename": "home-1440x900.png",
+    "mimeType": "image/png",
+    "base64": "..."
+  },
   "verification": {}
 }
 ```
 
-Normalize CSS to `theme.css` and artwork to a safe basename. Remove absolute paths and private evidence. Reject packages over 30 MB, path traversal, executable content, external CSS resources, scripts, and unsupported asset MIME types.
+`art` is the theme's background artwork; `preview` is the workspace capture that codexthemes.ai shows in the gallery and on the detail page — the submit API prefers `preview` and only falls back to `art` when no preview is embedded. Normalize CSS to `theme.css` and artwork to a safe basename. Remove absolute paths and private evidence. Reject packages over 30 MB, path traversal, executable content, external CSS resources, scripts, and unsupported asset MIME types.

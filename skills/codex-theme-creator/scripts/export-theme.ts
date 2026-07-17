@@ -17,7 +17,14 @@ interface ThemeManifest {
   version: string;
   css: string;
   art?: string;
+  preview?: string;
   [key: string]: unknown;
+}
+
+interface EmbeddedAsset {
+  filename: string;
+  mimeType: string;
+  base64: string;
 }
 
 const maxPackageBytes = 30 * 1024 * 1024;
@@ -61,6 +68,39 @@ async function readOptionalJson(filename: string): Promise<Record<string, unknow
   return source ? JSON.parse(source) as Record<string, unknown> : {};
 }
 
+async function readEmbeddedAsset(assetPath: string): Promise<EmbeddedAsset> {
+  return {
+    filename: path.basename(assetPath),
+    mimeType: assetMimeType(assetPath),
+    base64: (await fs.readFile(assetPath)).toString('base64'),
+  };
+}
+
+/**
+ * The package preview is the gallery/detail image on codexthemes.ai — it must
+ * show the themed workspace (sidebar, header, home content), never the raw
+ * artwork. Resolution order: manifest.preview, then the largest-looking raster
+ * in previews/ (files containing "1440" first).
+ */
+async function resolvePreviewPath(themeDir: string, manifest: ThemeManifest): Promise<string | null> {
+  if (manifest.preview) {
+    const previewPath = path.resolve(themeDir, manifest.preview);
+    if (!previewPath.startsWith(`${themeDir}${path.sep}`)) throw new Error('Preview path escapes the theme directory');
+    await fs.access(previewPath);
+    return previewPath;
+  }
+  let entries: string[];
+  try {
+    entries = await fs.readdir(path.join(themeDir, 'previews'));
+  } catch {
+    return null;
+  }
+  const rasters = entries.filter((name) => /\.(png|jpe?g|webp)$/i.test(name)).sort();
+  if (rasters.length === 0) return null;
+  const preferred = rasters.find((name) => name.includes('1440')) ?? rasters[0];
+  return path.join(themeDir, 'previews', preferred);
+}
+
 export async function exportTheme(themeDirectory: string, outputDirectory = exportsRoot()): Promise<string> {
   const themeDir = path.resolve(themeDirectory);
   const validation = await validateTheme(themeDir);
@@ -70,16 +110,15 @@ export async function exportTheme(themeDirectory: string, outputDirectory = expo
   const css = await fs.readFile(path.join(themeDir, manifest.css), 'utf8');
   const readme = await readOptionalText(path.join(themeDir, 'README.md'));
   const verification = await readOptionalJson(path.join(themeDir, 'state', 'verification.json'));
-  let art: { filename: string; mimeType: string; base64: string } | undefined;
+  let art: EmbeddedAsset | undefined;
   if (manifest.art) {
     const artPath = path.resolve(themeDir, manifest.art);
     if (!artPath.startsWith(`${themeDir}${path.sep}`)) throw new Error('Artwork path escapes the theme directory');
-    art = {
-      filename: path.basename(artPath),
-      mimeType: assetMimeType(artPath),
-      base64: (await fs.readFile(artPath)).toString('base64'),
-    };
+    art = await readEmbeddedAsset(artPath);
   }
+  let preview: EmbeddedAsset | undefined;
+  const previewPath = await resolvePreviewPath(themeDir, manifest);
+  if (previewPath) preview = await readEmbeddedAsset(previewPath);
 
   const portable = {
     format: 'codex-theme',
@@ -89,6 +128,7 @@ export async function exportTheme(themeDirectory: string, outputDirectory = expo
     css,
     readme,
     ...(art ? { art } : {}),
+    ...(preview ? { preview } : {}),
     verification,
   };
   const body = `${JSON.stringify(portable, null, 2)}\n`;

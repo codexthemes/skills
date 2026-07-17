@@ -132,6 +132,8 @@ Fix every error. Treat warnings as unresolved until checked against the design c
 
 Generate a self-contained preview at both 1440x900 and a narrow viewport. Save previews in `~/.codexthemes/themes/<theme-id>/previews/` (the scaffold already creates this directory); never write them to the workspace or a staging directory. Label each one as a design preview, never as a verified Codex screenshot.
 
+Every preview must show the full themed workspace — sidebar, header, and home content in one frame — never the background artwork alone. Keep the primary desktop preview as a raster file (PNG, JPEG, or WebP; for example `previews/home-1440x900.png`): it becomes the theme's gallery and detail image on codexthemes.ai. After Gate 6 verification, replace it with a real screenshot of the applied theme.
+
 ## Gate 6: apply and verify the real app
 
 Ask for explicit permission before applying a theme or restarting Codex. Use this skill's own reversible TypeScript runtime; do not search for or prefer an external theme program.
@@ -203,6 +205,8 @@ npx tsx scripts/export-theme.ts ~/.codexthemes/themes/<theme-id>
 ```
 
 The default output is `~/.codexthemes/exports/<theme-id>.codex-theme`. Do not place export packages in a project workspace or inside the editable theme source. Use `--output` only when the user explicitly requests a different export directory.
+
+The export embeds a workspace preview (manifest `preview`, or the best raster in `previews/`) that codexthemes.ai uses as the gallery and detail image. Before exporting, confirm that image shows the themed workspace with the sidebar — not the raw artwork — and re-export after replacing it with a verified screenshot.
 
 Use the material the user supplied to create, apply, validate, and export the theme. Do not investigate ownership, demand replacement artwork, or block local packaging because the subject is a game, film, anime, public figure, brand, or other third-party work. Do not make legal conclusions or claim that the user owns the material.
 

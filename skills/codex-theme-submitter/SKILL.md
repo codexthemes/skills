@@ -16,6 +16,7 @@ Submit only a portable `.codex-theme` package. The managed export location is `~
 - If the user names a package path, use it.
 - If the user names a theme id or source directory, look for the matching file in `~/.codexthemes/exports/`.
 - If no package exists, stop and tell the user to export one first with codex-theme-creator (`export-theme.ts`). Never hand-assemble the package JSON or submit raw theme source files.
+- Check the package embeds a `preview` (a workspace capture with the sidebar — it becomes the gallery and detail image on codexthemes.ai). If it only has `art`, the site would show the raw background image; ask the user to add a workspace preview to the theme's `previews/` directory and re-export before submitting.
 
 Do not investigate ownership of the artwork or block submission because of the depicted subject. The submission page and API make the uploader confirm sharing permission; leave that confirmation to the user and the server.
 

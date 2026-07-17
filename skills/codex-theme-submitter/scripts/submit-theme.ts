@@ -55,12 +55,13 @@ export function validatePackage(portable: unknown): string[] {
     }
   }
   if (typeof record.css !== 'string' || !record.css.trim()) errors.push('css must be a non-empty string');
-  const art = record.art as Record<string, unknown> | undefined;
-  if (art !== undefined) {
-    if (typeof art !== 'object' || art === null) {
-      errors.push('art must be an object when present');
-    } else if (typeof art.filename !== 'string' || typeof art.mimeType !== 'string' || typeof art.base64 !== 'string') {
-      errors.push('art must include filename, mimeType, and base64 strings');
+  for (const field of ['art', 'preview'] as const) {
+    const asset = record[field] as Record<string, unknown> | undefined;
+    if (asset === undefined) continue;
+    if (typeof asset !== 'object' || asset === null) {
+      errors.push(`${field} must be an object when present`);
+    } else if (typeof asset.filename !== 'string' || typeof asset.mimeType !== 'string' || typeof asset.base64 !== 'string') {
+      errors.push(`${field} must include filename, mimeType, and base64 strings`);
     }
   }
   return errors;

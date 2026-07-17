@@ -39,11 +39,12 @@ The body is the portable `.codex-theme` package exactly as exported by codex-the
   "css": "...",
   "readme": "...",
   "art": { "filename": "art.png", "mimeType": "image/png", "base64": "..." },
+  "preview": { "filename": "home-1440x900.png", "mimeType": "image/png", "base64": "..." },
   "verification": {}
 }
 ```
 
-`art` and `verification` are optional. The client validates `format`, `schemaVersion`, `manifest.id` (lowercase slug), `manifest.version`, and non-empty `css` before sending anything.
+`art`, `preview`, and `verification` are optional. `preview` should be a raster capture of the themed workspace (sidebar + home); the server uses it as the gallery and detail image and falls back to `art` only when no preview is embedded — a package without a workspace preview lists with the raw artwork, which looks wrong on the site. The client validates `format`, `schemaVersion`, `manifest.id` (lowercase slug), `manifest.version`, and non-empty `css` before sending anything.
 
 ## Responses
 
