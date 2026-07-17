@@ -126,14 +126,36 @@ async function detectMacApp(explicit?: string): Promise<string> {
   throw new Error('Cannot find Codex.app or ChatGPT.app; pass --app with the application path');
 }
 
+async function mainProcessRunning(app: string): Promise<boolean> {
+  try {
+    await execFileAsync('pgrep', ['-f', `${app}/Contents/MacOS/`]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function quitAndWait(app: string): Promise<void> {
+  const appName = path.basename(app, '.app');
+  await execFileAsync('osascript', ['-e', `tell application ${JSON.stringify(appName)} to quit`]).catch(() => undefined);
+  // The debugging flags only take effect on a fresh instance. If the old
+  // instance is still shutting down it holds the Chromium profile singleton
+  // lock, and the relaunched instance silently defers to it and exits, so the
+  // app comes back WITHOUT the debugging endpoint. Wait for a real exit.
+  const deadline = Date.now() + 45_000;
+  while (Date.now() < deadline) {
+    if (!(await mainProcessRunning(app))) return;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(`${appName} did not quit within 45s. Quit it manually, then rerun apply with --launch.`);
+}
+
 async function launchWithDebugging(port: number, explicitApp?: string): Promise<void> {
   if (process.platform !== 'darwin') {
     throw new Error('--launch currently supports macOS. Start Codex with --remote-debugging-address=127.0.0.1 and --remote-debugging-port manually, then rerun without --launch.');
   }
   const app = await detectMacApp(explicitApp);
-  const appName = path.basename(app, '.app');
-  await execFileAsync('osascript', ['-e', `tell application ${JSON.stringify(appName)} to quit`]).catch(() => undefined);
-  await new Promise((resolve) => setTimeout(resolve, 1200));
+  await quitAndWait(app);
   const child = spawn('open', [
     '-na', app, '--args', '--remote-debugging-address=127.0.0.1', `--remote-debugging-port=${port}`,
   ], { detached: true, stdio: 'ignore' });
@@ -147,7 +169,10 @@ async function waitForTarget(port: number, timeoutMs = 30_000): Promise<{ port: 
     if (found) return found;
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  throw new Error(`Codex did not expose a debuggable app page on 127.0.0.1:${port}`);
+  throw new Error(
+    `Codex did not expose a debuggable app page on 127.0.0.1:${port}. ` +
+    'If the app is running, either an old instance was still holding the profile lock during relaunch, or this build ignores --remote-debugging-port.',
+  );
 }
 
 class CdpClient {

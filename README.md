@@ -80,7 +80,7 @@ By default, editable themes live in `~/.codexthemes/themes/<id>/`, shareable pac
 Use $codex-theme-submitter to submit ~/.codexthemes/exports/my-theme.codex-theme to codexthemes.ai.
 ```
 
-It checks for a local CodexThemes API key (`CODEXTHEMES_API_KEY` or `~/.codexthemes/credentials.json`), guides you to create one at [codexthemes.ai/settings/apikeys](https://codexthemes.ai/settings/apikeys) when none exists, validates the package with a dry run, and then submits it to the authenticated `POST /api/submit` endpoint.
+It checks for a local CodexThemes API key (`CODEXTHEMES_API_KEY` or `~/.codexthemes/credentials.json`), guides you to create one at [codexthemes.ai/settings/apikeys](https://codexthemes.ai/settings/apikeys) when none exists, validates the package with a dry run, and then submits it to the authenticated `POST /api/themes/submit` endpoint.
 
 `codex-theme-finder` searches the published gallery, and `codex-theme-installer` downloads a theme's source files into `~/.codexthemes/themes/<id>/`:
 

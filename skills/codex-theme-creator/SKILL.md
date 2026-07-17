@@ -13,6 +13,17 @@ Use this skill as the sole design and QA authority for a new Codex theme. Do not
 
 This skill is standalone. Its TypeScript scripts own scaffolding, validation, reversible session application, and restore. Never detect, invoke, read configuration from, or claim a dependency on CodeDrobe, Dream/Fiona, or another theme injector unless the user explicitly asks to use that product. Do not reuse their marker names or runtime data. The only required local tools are Node.js, `npx`, and the official Codex desktop app.
 
+## Managed storage
+
+Keep every generated theme file in the managed library `~/.codexthemes` unless the user explicitly requests another location:
+
+- editable source and artwork: `~/.codexthemes/themes/<theme-id>/`
+- previews: `~/.codexthemes/themes/<theme-id>/previews/`
+- shareable packages: `~/.codexthemes/exports/`
+- runtime state: `~/.codexthemes/state/`
+
+Never create a staging, scratch, or temporary copy of theme files in or near the current workspace (for example a `.codexthemes-stage` directory). If the sandbox or permission mode blocks writing to `~/.codexthemes`, ask the user to approve writing there instead of writing somewhere else first and moving files later.
+
 ## Read the required references
 
 Before creating or substantially redesigning a theme, read these files completely:
@@ -114,7 +125,7 @@ npx tsx scripts/validate-theme.ts /absolute/theme-directory
 
 Fix every error. Treat warnings as unresolved until checked against the design contract. Static validation does not replace visual verification.
 
-Generate a self-contained preview at both 1440x900 and a narrow viewport. Label it as a design preview, never as a verified Codex screenshot.
+Generate a self-contained preview at both 1440x900 and a narrow viewport. Save previews in `~/.codexthemes/themes/<theme-id>/previews/` (the scaffold already creates this directory); never write them to the workspace or a staging directory. Label each one as a design preview, never as a verified Codex screenshot.
 
 ## Gate 6: apply and verify the real app
 
@@ -165,7 +176,12 @@ The default output is `~/.codexthemes/exports/<theme-id>.codex-theme`. Do not pl
 
 Use the material the user supplied to create, apply, validate, and export the theme. Do not investigate ownership, demand replacement artwork, or block local packaging because the subject is a game, film, anime, public figure, brand, or other third-party work. Do not make legal conclusions or claim that the user owns the material.
 
-After export, tell the user to submit the `.codex-theme` package and a clear preview at `https://codexthemes.ai/submit`. State that the submission page asks the uploader to confirm they may share the material; leave that confirmation to the user and the submission workflow.
+After export, offer the user both submission paths:
+
+1. Manual: submit the `.codex-theme` package and a clear preview at `https://codexthemes.ai/submit`.
+2. Agent-assisted: tell the user they can reply with a prompt like `Use $codex-theme-submitter to submit ~/.codexthemes/exports/<theme-id>.codex-theme to codexthemes.ai`, and that if `$codex-theme-submitter` is not installed they can add it with `npx skills add codexthemes/skills --skill codex-theme-submitter -g -a codex`.
+
+State that submission asks the uploader to confirm they may share the material; leave that confirmation to the user and the submission workflow. Do not run the submission yourself unless the user asks for it.
 
 ## Completion standard
 

@@ -4,7 +4,7 @@
 
 Keep these claims separate:
 
-1. **Designed**: source and preview exist.
+1. **Designed**: source and preview exist in `~/.codexthemes/themes/<theme-id>/` (previews under its `previews/` directory), not in a workspace or staging copy.
 2. **Statically valid**: `validate-theme.ts` passes through `tsx`.
 3. **Applied**: the expected theme ID and version are active.
 4. **Visually verified**: real Codex screenshots and geometry checks pass.
