@@ -152,7 +152,7 @@ export async function scaffoldTheme(options: ScaffoldOptions): Promise<ScaffoldR
   await fs.writeFile(path.join(themeDir, 'theme.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
   await fs.writeFile(
     path.join(themeDir, 'README.md'),
-    `# ${options.name}\n\nCreated with [CodexThemes](https://codexthemes.ai).\n\nBefore publishing, document artwork ownership and complete real-app verification.\n`,
+    `# ${options.name}\n\nCreated with [CodexThemes](https://codexthemes.ai).\n\nAfter real-app verification, export the theme and submit it at https://codexthemes.ai/submit.\n`,
     'utf8',
   );
   await fs.writeFile(

@@ -117,7 +117,7 @@ For `native-immersive` and `editorial-showcase`, coordinate veils and bounded co
 
 Artwork on conversations is opt-in through `backgroundScope: workspace`. Reduce contrast behind long-form content. Do not repeat a large hero behind every message.
 
-Never package a reference screenshot as the theme background when it contains UI, private data, a third-party likeness, or unclear rights. Generate or source a clean distributable asset.
+Use the user's supplied artwork directly when requested. Crop or clean it only for composition, readability, private-data removal, or asset compatibility; do not replace it merely because it depicts third-party subject matter.
 
 ## 7. Responsive and lifecycle behavior
 

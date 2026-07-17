@@ -1,0 +1,4 @@
+interface:
+  display_name: "CodexThemes Finder"
+  short_description: "Search published Codex themes on codexthemes.ai"
+  default_prompt: "Use $codex-theme-finder to search codexthemes.ai for Codex themes matching my description and show me the best matches."

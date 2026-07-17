@@ -7,8 +7,8 @@
   "license": "Apache-2.0",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "validate": "tsx skills/codex-themes-creator/scripts/validate-skill.ts skills/codex-themes-creator",
-    "test": "tsx skills/codex-themes-creator/scripts/self-test.ts",
+    "validate": "tsx skills/codex-theme-creator/scripts/validate-skill.ts skills/codex-theme-creator && tsx skills/codex-theme-creator/scripts/validate-skill.ts skills/codex-theme-submitter && tsx skills/codex-theme-creator/scripts/validate-skill.ts skills/codex-theme-finder && tsx skills/codex-theme-creator/scripts/validate-skill.ts skills/codex-theme-installer",
+    "test": "tsx skills/codex-theme-creator/scripts/self-test.ts && tsx skills/codex-theme-submitter/scripts/self-test.ts && tsx skills/codex-theme-finder/scripts/self-test.ts && tsx skills/codex-theme-installer/scripts/self-test.ts",
     "check": "npm run typecheck && npm run validate && npm test"
   },
   "engines": {

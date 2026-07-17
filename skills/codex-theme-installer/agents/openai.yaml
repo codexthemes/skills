@@ -1,0 +1,4 @@
+interface:
+  display_name: "CodexThemes Installer"
+  short_description: "Download and install Codex themes from codexthemes.ai"
+  default_prompt: "Use $codex-theme-installer to download the Codex theme I picked from codexthemes.ai and install it into my local theme library."

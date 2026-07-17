@@ -29,7 +29,7 @@ Reject and revise when any item occurs:
 - decoration intercepts pointer or keyboard input
 - cold launch visibly flashes into a different geometry
 - theme works only on home while the contract requires immersive/workspace coverage
-- remote CSS, scripts, tracking, secrets, private data, or unlicensed assets are packaged
+- remote CSS, scripts, tracking, secrets, or private data are packaged
 
 A background-only result is not a failure when the contract selected `native-background`. It is a failure when component restyling was promised but not completed.
 

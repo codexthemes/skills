@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export function codexThemesHome(): string {
   const configured = process.env.CODEX_THEMES_HOME?.trim();
-  return path.resolve(configured || path.join(os.homedir(), '.codex-themes'));
+  return path.resolve(configured || path.join(os.homedir(), '.codexthemes'));
 }
 
 export function themesRoot(): string {

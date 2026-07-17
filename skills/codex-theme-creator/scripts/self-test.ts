@@ -23,8 +23,8 @@ try {
   const skillResult = await validateSkill(skillDir);
   assert.equal(skillResult.valid, true, skillResult.errors.join('\n'));
   assert.equal(parseScaffoldArgs(['--id', 'default-path', '--name', 'Default path', '--layout-mode', 'palette-only']).output, themesRoot());
-  assert.match(exportsRoot(), /\.codex-themes\/exports$/);
-  assert.match(runtimeStatePath(), /\.codex-themes\/state\/runtime\.json$/);
+  assert.match(exportsRoot(), /\.codexthemes\/exports$/);
+  assert.match(runtimeStatePath(), /\.codexthemes\/state\/runtime\.json$/);
 
   const modes: LayoutMode[] = [
     'native-background',
@@ -69,7 +69,7 @@ try {
   assert.equal(bad.valid, false);
   assert.match(bad.errors.join('\n'), /broad descendant state override/);
 
-  console.log('All TypeScript codex-themes-creator skill tests passed.');
+  console.log('All TypeScript codex-theme-creator skill tests passed.');
 } finally {
   await fs.rm(tempDir, { recursive: true, force: true });
 }

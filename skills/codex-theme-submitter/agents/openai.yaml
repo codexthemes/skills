@@ -1,0 +1,4 @@
+interface:
+  display_name: "CodexThemes Submitter"
+  short_description: "Submit packaged Codex themes to codexthemes.ai"
+  default_prompt: "Use $codex-theme-submitter to check my CodexThemes API key and submit my exported .codex-theme package to codexthemes.ai."

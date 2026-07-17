@@ -4,9 +4,9 @@ Use UTF-8 JSON in `theme.json`.
 
 ## Managed storage contract
 
-- Editable source: `~/.codex-themes/themes/<theme-id>/`
-- Shareable package: `~/.codex-themes/exports/<theme-id>.codex-theme`
-- Runtime state: `~/.codex-themes/state/`
+- Editable source: `~/.codexthemes/themes/<theme-id>/`
+- Shareable package: `~/.codexthemes/exports/<theme-id>.codex-theme`
+- Runtime state: `~/.codexthemes/state/`
 
 These are mandatory defaults, not examples. A user may explicitly request a custom source or export directory. Never default to the current repository, workspace, Downloads folder, or the installed Skill directory. `CODEX_THEMES_HOME` may override the root for automation and tests; do not set it during normal creation unless the user asks for a custom managed root.
 

@@ -1,5 +1,5 @@
 ---
-name: codex-themes-creator
+name: codex-theme-creator
 description: Create, redesign, validate, preview, package, and prepare cohesive themes for the official Codex desktop app from a visual brief or reference image. Use when a user asks for a new Codex theme, wants to preserve or adapt the native Codex layout, wants artwork on the home or conversation page, reports inconsistent themed surfaces, or needs a portable .codex-theme submission for CodexThemes.
 ---
 
@@ -20,7 +20,7 @@ Before creating or substantially redesigning a theme, read these files completel
 - `references/design-playbook.md`: layout modes, semantic palette, selectors, and surface coverage.
 - `references/qa-checklist.md`: real-app acceptance matrix and hard failures.
 - `references/theme-schema.md`: manifest and portable package contract.
-- `references/asset-rights.md`: source and redistribution checks.
+- `references/asset-rights.md`: user-material handling and submission handoff.
 
 Do not begin artwork or CSS until the design contract below is written.
 
@@ -76,7 +76,7 @@ npx tsx scripts/scaffold-theme.ts \
   [--art /absolute/artwork.png]
 ```
 
-The default source location is `~/.codex-themes/themes/<safe-slug>/`. Always use that managed library unless the user explicitly requests another location; only then pass `--output /absolute/theme-parent`. Never use the current workspace merely because it is writable.
+The default source location is `~/.codexthemes/themes/<safe-slug>/`. Always use that managed library unless the user explicitly requests another location; only then pass `--output /absolute/theme-parent`. Never use the current workspace merely because it is writable.
 
 Never start by copying a finished theme that uses another layout mode.
 
@@ -158,12 +158,14 @@ Package only verified local files. A `.codex-theme` package must be UTF-8 JSON, 
 Export the shareable package with:
 
 ```bash
-npx tsx scripts/export-theme.ts ~/.codex-themes/themes/<theme-id>
+npx tsx scripts/export-theme.ts ~/.codexthemes/themes/<theme-id>
 ```
 
-The default output is `~/.codex-themes/exports/<theme-id>.codex-theme`. Do not place export packages in a project workspace or inside the editable theme source. Use `--output` only when the user explicitly requests a different export directory.
+The default output is `~/.codexthemes/exports/<theme-id>.codex-theme`. Do not place export packages in a project workspace or inside the editable theme source. Use `--output` only when the user explicitly requests a different export directory.
 
-Before publishing, complete `references/asset-rights.md`. Do not package third-party photographs, celebrity likenesses, logos, screenshots, fonts, or theme code without explicit redistribution rights and required attribution.
+Use the material the user supplied to create, apply, validate, and export the theme. Do not investigate ownership, demand replacement artwork, or block local packaging because the subject is a game, film, anime, public figure, brand, or other third-party work. Do not make legal conclusions or claim that the user owns the material.
+
+After export, tell the user to submit the `.codex-theme` package and a clear preview at `https://codexthemes.ai/submit`. State that the submission page asks the uploader to confirm they may share the material; leave that confirmation to the user and the submission workflow.
 
 ## Completion standard
 
