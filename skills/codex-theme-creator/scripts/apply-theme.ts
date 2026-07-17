@@ -1,5 +1,6 @@
 #!/usr/bin/env -S npx tsx
 
+import { closeSync, openSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -8,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 import { validateTheme } from './validate-theme.ts';
-import { runtimeStatePath } from './paths.ts';
+import { runtimeStatePath, stateRoot } from './paths.ts';
 
 type Command = 'apply' | 'restore' | 'status';
 
@@ -18,6 +19,8 @@ interface Options {
   port: number;
   launch: boolean;
   app?: string;
+  /** Internal: run the quit/relaunch/inject sequence inline (used by the detached helper). */
+  worker: boolean;
 }
 
 interface Target {
@@ -46,7 +49,7 @@ function parseArgs(argv: string[]): Options {
     throw new Error('Usage: apply-theme.ts <apply THEME_DIR|restore|status> [--port 9335] [--launch] [--app /Applications/Codex.app]');
   }
 
-  const options: Options = { command, port: 9335, launch: false };
+  const options: Options = { command, port: 9335, launch: false, worker: false };
   if (command === 'apply' && argv[0] && !argv[0].startsWith('--')) {
     options.themeDir = path.resolve(argv.shift()!);
   }
@@ -58,6 +61,8 @@ function parseArgs(argv: string[]): Options {
       options.port = port;
     } else if (arg === '--launch') {
       options.launch = true;
+    } else if (arg === '--launch-worker') {
+      options.worker = true;
     } else if (arg === '--app') {
       const app = argv[++index];
       if (!app) throw new Error('--app requires a path');
@@ -321,6 +326,39 @@ async function removePreviousRegistration(client: CdpClient, target: Target): Pr
   }
 }
 
+export function launchLogPath(): string {
+  return path.join(stateRoot(), 'launch.log');
+}
+
+/**
+ * Run the quit → relaunch → inject sequence in a detached helper process.
+ * When the applying agent is hosted inside Codex itself, quitting Codex kills
+ * the agent's tool call (and any process in its group) before the relaunch
+ * can happen. The helper starts its own session, so it survives the restart
+ * and finishes the injection on its own; its output lands in launch.log.
+ */
+async function scheduleDetachedLaunch(options: Options): Promise<void> {
+  await fs.mkdir(stateRoot(), { recursive: true });
+  const logPath = launchLogPath();
+  const logFd = openSync(logPath, 'w');
+  const args = [
+    ...process.execArgv,
+    process.argv[1]!,
+    'apply', options.themeDir!,
+    '--launch', '--launch-worker',
+    '--port', String(options.port),
+    ...(options.app ? ['--app', options.app] : []),
+  ];
+  const child = spawn(process.execPath, args, { detached: true, stdio: ['ignore', logFd, logFd] });
+  child.unref();
+  closeSync(logFd);
+  console.log(JSON.stringify({
+    status: 'scheduled',
+    note: 'Codex is restarting with the debugging endpoint; a detached helper that survives the restart will inject the theme. This tool call may be interrupted by the restart. Afterwards verify with: apply-theme.ts status',
+    logPath,
+  }, null, 2));
+}
+
 async function apply(options: Options): Promise<void> {
   const themeDir = options.themeDir!;
   const validation = await validateTheme(themeDir);
@@ -329,6 +367,10 @@ async function apply(options: Options): Promise<void> {
     id: string; css: string; design: { backgroundScope: string };
   };
   const css = await inlineLocalAssets(await fs.readFile(path.join(themeDir, manifest.css), 'utf8'), themeDir);
+  if (options.launch && !options.worker && !(await locateTarget(options.port))) {
+    await scheduleDetachedLaunch(options);
+    return;
+  }
   const connection = await connect(options);
   if (!connection) {
     throw new Error('No debuggable Codex renderer found. With explicit restart permission, rerun with --launch; no external theme program is required.');
@@ -368,11 +410,36 @@ async function restore(options: Options): Promise<void> {
   }
 }
 
+async function status(options: Options): Promise<void> {
+  const state = await readRuntimeState();
+  const found = await locateTarget(state?.port ?? options.port);
+  let liveThemeId: string | null = null;
+  if (found) {
+    const client = await CdpClient.connect(found.target.webSocketDebuggerUrl);
+    try {
+      const evaluated = await client.call('Runtime.evaluate', {
+        expression: "document.documentElement.dataset.codexthemesTheme ?? ''",
+        returnByValue: true,
+      });
+      liveThemeId = evaluated.result?.value || null;
+    } finally {
+      client.close();
+    }
+  }
+  console.log(JSON.stringify({
+    status: liveThemeId ? 'active' : 'inactive',
+    themeId: liveThemeId,
+    debugEndpoint: found ? `127.0.0.1:${found.port}` : null,
+    recordedState: state ?? null,
+    launchLog: launchLogPath(),
+  }, null, 2));
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   if (options.command === 'apply') await apply(options);
   else if (options.command === 'restore') await restore(options);
-  else console.log(JSON.stringify((await readRuntimeState()) ?? { status: 'inactive' }, null, 2));
+  else await status(options);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

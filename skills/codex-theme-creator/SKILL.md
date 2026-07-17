@@ -143,7 +143,17 @@ If no endpoint exists, ask specifically for permission to restart Codex, then us
 npx tsx scripts/apply-theme.ts apply /absolute/theme-directory --launch
 ```
 
-The launcher binds debugging to `127.0.0.1`, injects only an owned `<style>` element and CodexThemes page markers, does not modify the signed application bundle, and keeps the theme active across SPA route changes and renderer reloads for the current app session. A full application quit requires reapplying the theme. Restore at any time with:
+When no endpoint is live, `--launch` prints `{"status": "scheduled"}` and hands the quit → relaunch → inject sequence to a detached helper that survives the restart. This is required because an agent hosted inside Codex dies together with Codex; expect the current tool call (and possibly the session) to be interrupted by the restart. Never work around the restart yourself: do not write shell wrappers, launchd or scheduled tasks, copies of the script, or any other relaunch mechanism — the `--launch` helper already survives the restart.
+
+`"scheduled"` is not success. After Codex is back, verify before reporting anything:
+
+```bash
+npx tsx scripts/apply-theme.ts status
+```
+
+`status` probes the live renderer and reports `"active"` with the injected theme id only when the style element is really in the DOM. If it reports `"inactive"`, read `~/.codexthemes/state/launch.log` for the helper's result and error.
+
+The launcher binds debugging to `127.0.0.1`, injects only an owned `<style>` element and CodexThemes page markers, does not modify the signed application bundle, and keeps the theme active across SPA route changes and renderer reloads for the current app session. A full application quit requires reapplying the theme (again with `--launch`). Restore at any time with:
 
 ```bash
 npx tsx scripts/apply-theme.ts restore
