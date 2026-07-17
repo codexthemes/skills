@@ -1,4 +1,7 @@
-/* __THEME_ID__: preserve geometry while coordinating semantic materials. */
+/* __THEME_ID__: preserve geometry while coordinating semantic materials.
+   Slots below map to the decoration menu in references/design-playbook.md §8.
+   Fill each slot for the contracted decorDensity; delete slots the contract excludes. */
+
 :root[data-codexthemes-theme="__THEME_ID__"] {
   --ct-canvas: #fffaf6;
   --ct-surface: rgba(255, 253, 251, 0.91);
@@ -6,10 +9,17 @@
   --ct-text: #3f3033;
   --ct-muted: #806d72;
   --ct-accent: #bd4968;
+  --ct-accent-soft: rgba(189, 73, 104, 0.14);
   --ct-border: #ead3d9;
+  --ct-focus: #bd4968;
+  --ct-shadow: rgba(63, 48, 51, 0.12);
   --ct-art: url("./assets/artwork.png");
+  /* Typography pairing: display stack for headings/brand moments, body stack for prose. */
+  --ct-font-display: "Iowan Old Style", "Songti SC", serif;
+  --ct-font-body: "Avenir Next", "PingFang SC", sans-serif;
 }
 
+/* Layered canvas: gradient + artwork or texture, never one flat color. */
 main.main-surface[data-codexthemes-page="home"],
 main.main-surface[data-codexthemes-page="conversation"] {
   color: var(--ct-text);
@@ -26,6 +36,7 @@ main.main-surface[data-codexthemes-page="home"]::before,
   pointer-events: none;
 }
 
+/* Coordinated surfaces: sidebar, composer, menus, dialogs, output/diff share one material system. */
 aside.app-shell-left-panel,
 .composer-surface-chrome,
 [role="menu"],
@@ -37,6 +48,68 @@ aside.app-shell-left-panel,
   border-color: var(--ct-border);
 }
 
+/* Home stage — hero treatment (rich): frame the native heading region as a banner card.
+   Anchor to a verified heading container inside the home page; keep a veil gradient over
+   the text-safe region and keep every native control clickable. Example shape:
+
+main.main-surface[data-codexthemes-page="home"] <verified-heading-container> {
+  border: 1px solid var(--ct-border);
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, var(--ct-canvas) 0%, rgba(255,250,246,.85) 55%, rgba(255,250,246,.1) 85%),
+    var(--ct-art) right center / auto 200% no-repeat;
+  box-shadow: 0 14px 34px var(--ct-shadow);
+}
+*/
+
+/* Home stage — tagline (rich): one short themed line via a pseudo-element on a verified
+   non-interactive hook under the heading. Keep it pointer-events: none. */
+
+/* Home stage — suggestion cards (balanced+): themed material, badged icon, gentle hover lift.
+   Anchor to the verified suggestion-card hook; keep labels readable and cards clickable.
+
+main.main-surface[data-codexthemes-page="home"] <verified-suggestion-card> {
+  border: 1px solid var(--ct-border);
+  border-radius: 20px;
+  background: linear-gradient(var(--ct-raised), var(--ct-surface));
+  box-shadow: 0 8px 18px var(--ct-shadow);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+main.main-surface[data-codexthemes-page="home"] <verified-suggestion-card>:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 26px var(--ct-shadow);
+}
+*/
+
+/* Chrome accents (rich): header lockup, corner emblem, ambient particles, composer marker.
+   Every accent is a positioned pseudo-element with pointer-events: none, below native
+   controls, scoped to the home marker, and dropped at narrow widths. Example ambient dot: */
+main.main-surface[data-codexthemes-page="home"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 88% 12%, var(--ct-accent-soft) 0 2px, transparent 3px),
+    radial-gradient(circle at 12% 22%, var(--ct-accent-soft) 0 1px, transparent 2px);
+  background-size: 89px 89px, 67px 67px;
+  opacity: .5;
+  animation: ct-__THEME_ID__-drift 8s ease-in-out infinite alternate;
+}
+
+@keyframes ct-__THEME_ID__-drift {
+  from { opacity: .35; }
+  to { opacity: .6; }
+}
+
+/* Token sweep: scrollbars, selection, caret, focus — no stale native color survives. */
+main.main-surface[data-codexthemes-page="home"],
+main.main-surface[data-codexthemes-page="conversation"],
+aside.app-shell-left-panel {
+  scrollbar-color: var(--ct-accent-soft) transparent;
+}
+
 .xterm,
 .xterm-viewport,
 .xterm-screen,
@@ -45,10 +118,12 @@ aside.app-shell-left-panel,
   background: var(--ct-canvas);
 }
 
-:focus-visible { outline-color: var(--ct-accent); }
+:focus-visible { outline-color: var(--ct-focus); }
 
 @media (max-width: 980px) {
   main.main-surface[data-codexthemes-page="home"]::before { background-position: 62% 50%; }
+  /* Drop corner emblems and ambient layers first; keep materials and palette. */
+  main.main-surface[data-codexthemes-page="home"]::after { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

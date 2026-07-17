@@ -9,12 +9,13 @@
 5. Selector discipline
 6. Artwork and composition
 7. Responsive and lifecycle behavior
+8. Decoration menu and density coverage
 
 ## 1. Design contract
 
-Write the contract before CSS. It must name the layout mode, background scope, mode reason, focal point, text-safe region, allowed changes, preserved native behavior, and target viewports.
+Write the contract before CSS. It must name the layout mode, background scope, decor density, mode reason, focal point, text-safe region, allowed changes, preserved native behavior, and target viewports.
 
-Visual richness does not imply permission to restructure Codex. If a reference can be expressed through background, palette, material, and ornament changes, preserve native geometry.
+Visual richness does not imply permission to restructure Codex. If a reference can be expressed through background, palette, material, and ornament changes, preserve native geometry. The reverse also holds: preserving native geometry does not mean shipping a bare background — section 8 defines how much of the decoration menu each density must cover.
 
 ## 2. Layout modes
 
@@ -126,3 +127,40 @@ At desktop width, preserve the native relationship among heading, suggestion car
 Verify cold launch. Inject base tokens and structural CSS before decoding large artwork so the page does not flash from native to themed geometry. Artwork failure must leave a readable usable app.
 
 Verify route changes, renderer reload, theme switching, restore, and reapply. Dynamic terminal and menu portals may mount after the initial stylesheet; their semantic tokens must still resolve correctly.
+
+## 8. Decoration menu and density coverage
+
+A theme reads as finished when the reference's world shows up in the details, not only in the wallpaper. Build decoration from this menu. Every item is pure CSS on verified hooks — no scripts, no fake controls, `pointer-events: none` on every decorative layer, and native geometry, hit targets, and hover-only actions untouched.
+
+### Element menu
+
+**Materials and typography**
+
+- Themed font pairing: one display stack for headings and brand moments, one body stack; apply through scoped selectors, never `* { font-family }`.
+- Layered surfaces: gradient plus subtle texture or grain on canvas, sidebar, header, composer, and cards instead of one flat color. Keep prose and code regions calm.
+- Full token sweep: recolor scrollbars, selection, caret, links, badges, checkboxes, toggles, dropdown and menu materials, code/diff panels, and terminal together with the headline surfaces so no stale native color survives.
+
+**Home stage** (scope with `main.main-surface[data-codexthemes-page="home"]`)
+
+- Hero treatment: frame the native heading region as a banner card — artwork on one side, a veil gradient protecting the text-safe region, a themed border and shadow.
+- Tagline: a short themed line under the heading via a pseudo-element `content:` on a verified non-interactive hook.
+- Suggestion cards: themed material, a circular or badged icon treatment, and a small hover lift/glow; keep label text readable and the whole card clickable.
+- Project selector: themed chip material consistent with the cards.
+
+**Chrome accents** (all `pointer-events: none`, below native controls)
+
+- Header lockup: a small brand/title or motto treatment at a header edge that never covers native actions.
+- Corner emblem: one signature ornament — a seal, sticker, framed miniature of the artwork, or mascot — anchored to a home corner and hidden at narrow widths.
+- Ambient layer: sparse particles, sparkles, mist, or ink motes as positioned pseudo-elements with a gentle keyframe animation; disable the animation under `prefers-reduced-motion`.
+- Composer accent: a themed frame for the composer chrome plus one small decorative marker on its edge.
+- Sidebar accents: coordinated hover/selected materials and at most one small glyph flourish; never hide or displace row actions.
+
+### Density coverage
+
+| `decorDensity` | Required coverage |
+| --- | --- |
+| `minimal` | background with veil, semantic palette, readable states |
+| `balanced` | minimal, plus layered surfaces, full token sweep, themed suggestion cards and composer, font pairing |
+| `rich` | balanced, plus hero treatment, tagline, header lockup, one corner emblem, one ambient layer, sidebar accents |
+
+Decoration never outranks readability: if an element fights prose, code, or control contrast at any viewport, cut the element, not the contrast. At narrow widths drop corner emblems and ambient layers first, keep materials and palette.

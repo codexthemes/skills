@@ -41,6 +41,7 @@ Record:
 
 - `layoutMode`
 - `backgroundScope`
+- `decorDensity`
 - light or dark mode and the reason
 - artwork focal point and text-safe region
 - semantic palette
@@ -50,10 +51,12 @@ Record:
 
 Choose the layout mode in this order:
 
-1. Use `native-background` when the user wants only a background, likes the existing Codex layout, or does not explicitly request component restyling.
-2. Use `native-immersive` when the user wants the native layout plus coordinated sidebar, card, menu, composer, settings, diff, and terminal materials.
+1. Use `native-immersive` as the default when the user supplies a reference image or names a visual world (a game, film, anime, brand, season, or other strong art direction): keep the native layout and deliver coordinated sidebar, card, menu, composer, settings, diff, and terminal materials plus the decoration menu in `references/design-playbook.md`.
+2. Use `native-background` only when the user explicitly restricts the theme to a background change.
 3. Use `editorial-showcase` only when the reference clearly requires a bounded portrait, product, or campaign hero with a different home composition.
 4. Use `palette-only` when no dominant artwork is required.
+
+Record `decorDensity` as `minimal`, `balanced`, or `rich`. Default to `rich` when the reference has a strong art direction and `balanced` otherwise; use `minimal` only when the user explicitly asks for a background-only or quiet theme. The design playbook defines the element coverage each density requires. A theme that ships one background image and a veil does not satisfy `balanced` or `rich`.
 
 Default `backgroundScope` to `home`. Use `workspace` only when the user explicitly wants artwork on normal task and conversation pages. Never infer a conversation page merely because the page is not home; settings and system pages must not inherit task artwork.
 
@@ -103,7 +106,7 @@ Build CSS in this order:
 6. non-interactive decoration
 7. responsive and reduced-motion rules
 
-Start with the minimum change allowed by the contract. Use stable roles, test IDs, verified component classes, and narrowly anchored `:has(...)`. Avoid localized text selectors when a structural hook exists.
+Restraint applies to geometry and interaction, not to coverage: implement every surface material and decoration element the contracted `decorDensity` requires (see the playbook's decoration menu). A theme that only swaps the background and leaves native cards, composer, sidebar, header, typography, and scrollbars untouched is unfinished at `balanced` or `rich` density. Use stable roles, test IDs, verified component classes, and narrowly anchored `:has(...)`. Avoid localized text selectors when a structural hook exists.
 
 Never apply broad `opacity`, `display`, `visibility`, `position`, `overflow`, or `color` overrides to `aside *`, `main *`, generic `svg`, or broad descendant groups. Never use descendant `opacity: 1` to repair contrast; it exposes hidden row actions.
 

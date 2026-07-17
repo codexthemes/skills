@@ -29,9 +29,10 @@ Reject and revise when any item occurs:
 - decoration intercepts pointer or keyboard input
 - cold launch visibly flashes into a different geometry
 - theme works only on home while the contract requires immersive/workspace coverage
+- contracted `decorDensity` coverage is missing: a `balanced` or `rich` theme ships as a background swap without the design playbook's required elements (materials, token sweep, cards, composer, and for `rich` the hero, tagline, lockup, emblem, and ambient layer)
 - remote CSS, scripts, tracking, secrets, or private data are packaged
 
-A background-only result is not a failure when the contract selected `native-background`. It is a failure when component restyling was promised but not completed.
+A background-only result is not a failure when the contract selected `native-background` with `minimal` density. It is a failure when component restyling or a higher density was promised but not completed.
 
 ## Required state matrix
 
