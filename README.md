@@ -73,11 +73,11 @@ The root README is for people. Everything inside `skills/new-theme/` is the inst
 ## Validation
 
 ```bash
-npm test
-python3 /path/to/skill-creator/scripts/quick_validate.py skills/new-theme
+npm ci
+npm run check
 ```
 
-The first command tests the scaffold and static theme validator. The second validates Agent Skill metadata when the OpenAI skill-creator utilities are available.
+`npm run check` runs strict TypeScript type checking, validates Agent Skill metadata with the bundled TypeScript validator, and tests every scaffold mode plus static theme rejection rules. The repository does not require Python.
 
 ## Content and rights policy
 

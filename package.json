@@ -6,9 +6,17 @@
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
-    "test": "node skills/new-theme/scripts/self-test.mjs"
+    "typecheck": "tsc --noEmit",
+    "validate": "tsx skills/new-theme/scripts/validate-skill.ts skills/new-theme",
+    "test": "tsx skills/new-theme/scripts/self-test.ts",
+    "check": "npm run typecheck && npm run validate && npm test"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.0"
   }
 }

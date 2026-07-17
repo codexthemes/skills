@@ -5,7 +5,7 @@
 Keep these claims separate:
 
 1. **Designed**: source and preview exist.
-2. **Statically valid**: `validate-theme.mjs` passes.
+2. **Statically valid**: `validate-theme.ts` passes through `tsx`.
 3. **Applied**: the expected theme ID and version are active.
 4. **Visually verified**: real Codex screenshots and geometry checks pass.
 5. **Packaged**: a safe portable package matches the verified version.

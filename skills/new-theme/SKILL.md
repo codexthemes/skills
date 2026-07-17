@@ -62,7 +62,7 @@ Treat geometry, visibility, hit targets, keyboard focus, and hover-only actions 
 Run from the installed skill directory:
 
 ```bash
-node scripts/scaffold-theme.mjs \
+npx tsx scripts/scaffold-theme.ts \
   --id <safe-slug> \
   --name "<display name>" \
   --layout-mode <native-background|native-immersive|editorial-showcase|palette-only> \
@@ -102,7 +102,7 @@ Increment the manifest version after every visible change.
 Run:
 
 ```bash
-node scripts/validate-theme.mjs /absolute/theme-directory
+npx tsx scripts/validate-theme.ts /absolute/theme-directory
 ```
 
 Fix every error. Treat warnings as unresolved until checked against the design contract. Static validation does not replace visual verification.
