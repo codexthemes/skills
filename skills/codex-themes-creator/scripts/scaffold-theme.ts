@@ -4,6 +4,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { themesRoot } from './paths.ts';
+
 export type LayoutMode =
   | 'native-background'
   | 'native-immersive'
@@ -45,7 +47,7 @@ export function parseScaffoldArgs(argv: string[]): ScaffoldOptions {
   const values: Partial<ScaffoldOptions> = {
     layoutMode: 'native-background',
     backgroundScope: 'home',
-    output: process.cwd(),
+    output: themesRoot(),
   };
 
   for (let index = 0; index < argv.length; index += 1) {

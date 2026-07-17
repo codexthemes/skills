@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 import { validateTheme } from './validate-theme.ts';
+import { runtimeStatePath } from './paths.ts';
 
 type Command = 'apply' | 'restore' | 'status';
 
@@ -35,7 +36,8 @@ interface RuntimeState {
 }
 
 const execFileAsync = promisify(execFile);
-const statePath = path.join(os.homedir(), '.codexthemes', 'runtime.json');
+const statePath = runtimeStatePath();
+const legacyStatePath = path.join(os.homedir(), '.codexthemes', 'runtime.json');
 const defaultPorts = [9335, 9222, 9223];
 
 function parseArgs(argv: string[]): Options {
@@ -84,6 +86,11 @@ async function writeState(state: RuntimeState): Promise<void> {
 
 async function clearState(): Promise<void> {
   await fs.rm(statePath, { force: true });
+  await fs.rm(legacyStatePath, { force: true });
+}
+
+async function readRuntimeState(): Promise<RuntimeState | undefined> {
+  return (await readJson<RuntimeState>(statePath)) ?? (await readJson<RuntimeState>(legacyStatePath));
 }
 
 async function targetsAt(port: number): Promise<Target[]> {
@@ -283,7 +290,7 @@ async function connect(options: Options): Promise<{ client: CdpClient; port: num
 }
 
 async function removePreviousRegistration(client: CdpClient, target: Target): Promise<void> {
-  const previous = await readJson<RuntimeState>(statePath);
+  const previous = await readRuntimeState();
   if (previous?.targetId === target.id && previous.scriptIdentifier) {
     await client.call('Page.removeScriptToEvaluateOnNewDocument', { identifier: previous.scriptIdentifier }).catch(() => undefined);
   }
@@ -317,7 +324,7 @@ async function apply(options: Options): Promise<void> {
 
 async function restore(options: Options): Promise<void> {
   const connection = await connect(options);
-  const previous = await readJson<RuntimeState>(statePath);
+  const previous = await readRuntimeState();
   if (!connection) {
     await clearState();
     console.log(JSON.stringify({ status: 'inactive', note: 'Codex was not running; local runtime state was cleared.' }, null, 2));
@@ -340,7 +347,7 @@ async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   if (options.command === 'apply') await apply(options);
   else if (options.command === 'restore') await restore(options);
-  else console.log(JSON.stringify((await readJson<RuntimeState>(statePath)) ?? { status: 'inactive' }, null, 2));
+  else console.log(JSON.stringify((await readRuntimeState()) ?? { status: 'inactive' }, null, 2));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

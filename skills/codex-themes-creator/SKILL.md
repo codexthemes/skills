@@ -73,9 +73,10 @@ npx tsx scripts/scaffold-theme.ts \
   --name "<display name>" \
   --layout-mode <native-background|native-immersive|editorial-showcase|palette-only> \
   --background-scope <home|workspace> \
-  --output /absolute/theme-parent \
   [--art /absolute/artwork.png]
 ```
+
+The default source location is `~/.codex-themes/themes/<safe-slug>/`. Always use that managed library unless the user explicitly requests another location; only then pass `--output /absolute/theme-parent`. Never use the current workspace merely because it is writable.
 
 Never start by copying a finished theme that uses another layout mode.
 
@@ -154,8 +155,16 @@ Capture real screenshots and computed-style/geometry evidence. A successful buil
 
 Package only verified local files. A `.codex-theme` package must be UTF-8 JSON, contain no absolute paths, external CSS resources, scripts, tracking, secrets, or private references, and stay under 30 MB. Follow `references/theme-schema.md`.
 
+Export the shareable package with:
+
+```bash
+npx tsx scripts/export-theme.ts ~/.codex-themes/themes/<theme-id>
+```
+
+The default output is `~/.codex-themes/exports/<theme-id>.codex-theme`. Do not place export packages in a project workspace or inside the editable theme source. Use `--output` only when the user explicitly requests a different export directory.
+
 Before publishing, complete `references/asset-rights.md`. Do not package third-party photographs, celebrity likenesses, logos, screenshots, fonts, or theme code without explicit redistribution rights and required attribution.
 
 ## Completion standard
 
-Reject an almost-complete theme. A polished home page does not compensate for broken conversations, settings, menus, terminal, sidebar states, narrow windows, or cold launch. Report separately what was designed, statically validated, applied, visually verified, and packaged.
+Reject an almost-complete theme. A polished home page does not compensate for broken conversations, settings, menus, terminal, sidebar states, narrow windows, or cold launch. Report separately what was designed, statically validated, applied, visually verified, and packaged. Always report the canonical source and export paths.

@@ -59,6 +59,8 @@ The skill defaults to preserving the native layout. It supports four explicit mo
 
 Theme creation, validation, session application, and restore are self-contained TypeScript workflows. They do **not** require CodeDrobe, Dream/Fiona, or another theme application. The runtime uses Node.js and Codex's loopback-only debugging endpoint, never patches the signed app bundle, and may need to be applied again after a full app quit.
 
+By default, editable themes live in `~/.codex-themes/themes/<id>/`, shareable packages in `~/.codex-themes/exports/<id>.codex-theme`, and runtime state in `~/.codex-themes/state/`.
+
 ## Repository layout
 
 ```text

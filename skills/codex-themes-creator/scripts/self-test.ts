@@ -6,8 +6,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { scaffoldTheme, type LayoutMode } from './scaffold-theme.ts';
+import { parseScaffoldArgs, scaffoldTheme, type LayoutMode } from './scaffold-theme.ts';
 import { inlineLocalAssets, runtimeSource } from './apply-theme.ts';
+import { exportTheme } from './export-theme.ts';
+import { exportsRoot, runtimeStatePath, themesRoot } from './paths.ts';
 import { validateTheme } from './validate-theme.ts';
 import { validateSkill } from './validate-skill.ts';
 
@@ -20,6 +22,9 @@ await fs.writeFile(artPath, Buffer.from('89504e470d0a1a0a', 'hex'));
 try {
   const skillResult = await validateSkill(skillDir);
   assert.equal(skillResult.valid, true, skillResult.errors.join('\n'));
+  assert.equal(parseScaffoldArgs(['--id', 'default-path', '--name', 'Default path', '--layout-mode', 'palette-only']).output, themesRoot());
+  assert.match(exportsRoot(), /\.codex-themes\/exports$/);
+  assert.match(runtimeStatePath(), /\.codex-themes\/state\/runtime\.json$/);
 
   const modes: LayoutMode[] = [
     'native-background',
@@ -50,6 +55,13 @@ try {
   assert.match(runtime, /data-thread-user-message-navigation-item-id/);
   assert.match(runtime, /data-composer-navigation-target/);
   assert.match(runtime, /codexthemes-runtime-style/);
+
+  const exportDir = path.join(tempDir, 'exports');
+  const packagePath = await exportTheme(nativeDir, exportDir);
+  assert.equal(packagePath, path.join(exportDir, 'test-native-background.codex-theme'));
+  const portable = JSON.parse(await fs.readFile(packagePath, 'utf8')) as Record<string, unknown>;
+  assert.equal(portable.format, 'codex-theme');
+  assert.equal((portable.manifest as Record<string, unknown>).id, 'test-native-background');
 
   const badDir = path.join(tempDir, 'test-native-immersive');
   await fs.appendFile(path.join(badDir, 'theme.css'), '\nmain * { opacity: 1; }\n');
