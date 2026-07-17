@@ -266,22 +266,60 @@ async function quitAndWait(app: string): Promise<void> {
 
 const debugFlags = (port: number) => ['--remote-debugging-address=127.0.0.1', `--remote-debugging-port=${port}`];
 
-async function launchWithDebugging(port: number, explicitApp?: string): Promise<void> {
+async function launchWithDebugging(port: number, explicitApp?: string): Promise<string> {
   if (process.platform === 'darwin') {
     const app = await detectMacApp(explicitApp);
     await quitAndWait(app);
     const child = spawn('open', ['-na', app, '--args', ...debugFlags(port)], { detached: true, stdio: 'ignore' });
     child.unref();
-    return;
+    return app;
   }
   if (process.platform === 'win32') {
     const app = await detectWindowsApp(explicitApp);
     await quitAndWait(app);
     const child = spawn(app, debugFlags(port), { detached: true, stdio: 'ignore' });
     child.unref();
-    return;
+    return app;
   }
   throw new Error('--launch supports macOS and Windows. Start Codex with --remote-debugging-address=127.0.0.1 and --remote-debugging-port manually, then rerun without --launch.');
+}
+
+async function mainProcessCommandLine(app: string): Promise<string> {
+  try {
+    if (process.platform === 'win32') {
+      const image = path.basename(app);
+      const { stdout } = await execFileAsync('powershell', [
+        '-NoProfile', '-Command',
+        `(Get-CimInstance Win32_Process -Filter "Name='${image}'" | Select-Object -First 1).CommandLine`,
+      ]);
+      return stdout.trim();
+    }
+    const { stdout } = await execFileAsync('pgrep', ['-fl', `${app}/Contents/MacOS/`]);
+    return stdout.split('\n')[0] ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Turn a silent endpoint timeout into a definite, actionable diagnosis. */
+async function launchDiagnostics(app: string): Promise<string> {
+  if (!(await mainProcessRunning(app))) {
+    return 'Diagnosis: the app is NOT running after the relaunch — launching it failed. Verify the application path (pass --app explicitly) and launch it manually once to check it starts at all.';
+  }
+  const commandLine = await mainProcessCommandLine(app);
+  if (commandLine.includes('--remote-debugging-port')) {
+    return 'Diagnosis: the app is running WITH the debugging flags on its command line but never opened the endpoint — this build ignores or strips --remote-debugging-port (common for store-packaged builds). This installation cannot be themed; report that limitation plainly instead of retrying.';
+  }
+  return 'Diagnosis: the app is running WITHOUT the debugging flags — an old instance held the profile singleton lock during the relaunch and the flagged instance deferred to it and exited. Retry with: apply ... --launch --relaunch';
+}
+
+async function waitForTargetsOrDiagnose(app: string, port: number): Promise<{ port: number; targets: Target[] }> {
+  try {
+    return await waitForTargets(port);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`${message}\n${await launchDiagnostics(app)}`);
+  }
 }
 
 async function waitForTargets(port: number, timeoutMs = 30_000): Promise<{ port: number; targets: Target[] }> {
@@ -497,8 +535,8 @@ async function apply(options: Options): Promise<void> {
       await scheduleDetachedLaunch(options, themeDir);
       return;
     }
-    await launchWithDebugging(options.port, options.app);
-    found = await waitForTargets(options.port);
+    const app = await launchWithDebugging(options.port, options.app);
+    found = await waitForTargetsOrDiagnose(app, options.port);
   }
 
   const source = runtimeSource(manifest.id, backgroundScope, css);
