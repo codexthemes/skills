@@ -195,7 +195,48 @@ async function detectMacApp(explicit?: string): Promise<string> {
   throw new Error('Cannot find Codex.app or ChatGPT.app; pass --app with the application path');
 }
 
+async function detectWindowsApp(explicit?: string): Promise<string> {
+  if (explicit) {
+    await fs.access(explicit);
+    return explicit;
+  }
+  // Prefer the path of a running instance — it works for every install kind.
+  for (const name of ['Codex', 'ChatGPT']) {
+    try {
+      const { stdout } = await execFileAsync('powershell', [
+        '-NoProfile', '-Command',
+        `(Get-Process -Name ${name} -ErrorAction SilentlyContinue | Where-Object Path | Select-Object -First 1).Path`,
+      ]);
+      const found = stdout.trim();
+      if (found) return found;
+    } catch { /* try the next name */ }
+  }
+  const local = process.env.LOCALAPPDATA;
+  const candidates = local ? [
+    path.join(local, 'Programs', 'Codex', 'Codex.exe'),
+    path.join(local, 'Programs', 'ChatGPT', 'ChatGPT.exe'),
+    path.join(local, 'Microsoft', 'WindowsApps', 'Codex.exe'),
+    path.join(local, 'Microsoft', 'WindowsApps', 'ChatGPT.exe'),
+  ] : [];
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch { /* try the next candidate */ }
+  }
+  throw new Error('Cannot find the Codex/ChatGPT executable; pass --app with the full path to the .exe');
+}
+
 async function mainProcessRunning(app: string): Promise<boolean> {
+  if (process.platform === 'win32') {
+    const image = path.basename(app);
+    try {
+      const { stdout } = await execFileAsync('tasklist', ['/FI', `IMAGENAME eq ${image}`]);
+      return stdout.toLowerCase().includes(image.toLowerCase());
+    } catch {
+      return false;
+    }
+  }
   try {
     await execFileAsync('pgrep', ['-f', `${app}/Contents/MacOS/`]);
     return true;
@@ -205,8 +246,13 @@ async function mainProcessRunning(app: string): Promise<boolean> {
 }
 
 async function quitAndWait(app: string): Promise<void> {
-  const appName = path.basename(app, '.app');
-  await execFileAsync('osascript', ['-e', `tell application ${JSON.stringify(appName)} to quit`]).catch(() => undefined);
+  const appName = path.basename(app, process.platform === 'win32' ? '.exe' : '.app');
+  if (process.platform === 'win32') {
+    // Graceful close (no /F): the app must exit cleanly, not be killed.
+    await execFileAsync('taskkill', ['/IM', path.basename(app)]).catch(() => undefined);
+  } else {
+    await execFileAsync('osascript', ['-e', `tell application ${JSON.stringify(appName)} to quit`]).catch(() => undefined);
+  }
   // The debugging flags only take effect on a fresh instance. If the old
   // instance is still shutting down it holds the Chromium profile singleton
   // lock, and the relaunched instance silently defers to it and exits.
@@ -218,16 +264,24 @@ async function quitAndWait(app: string): Promise<void> {
   throw new Error(`${appName} did not quit within 45s. Quit it manually, then rerun apply with --launch.`);
 }
 
+const debugFlags = (port: number) => ['--remote-debugging-address=127.0.0.1', `--remote-debugging-port=${port}`];
+
 async function launchWithDebugging(port: number, explicitApp?: string): Promise<void> {
-  if (process.platform !== 'darwin') {
-    throw new Error('--launch currently supports macOS. Start Codex with --remote-debugging-address=127.0.0.1 and --remote-debugging-port manually, then rerun without --launch.');
+  if (process.platform === 'darwin') {
+    const app = await detectMacApp(explicitApp);
+    await quitAndWait(app);
+    const child = spawn('open', ['-na', app, '--args', ...debugFlags(port)], { detached: true, stdio: 'ignore' });
+    child.unref();
+    return;
   }
-  const app = await detectMacApp(explicitApp);
-  await quitAndWait(app);
-  const child = spawn('open', [
-    '-na', app, '--args', '--remote-debugging-address=127.0.0.1', `--remote-debugging-port=${port}`,
-  ], { detached: true, stdio: 'ignore' });
-  child.unref();
+  if (process.platform === 'win32') {
+    const app = await detectWindowsApp(explicitApp);
+    await quitAndWait(app);
+    const child = spawn(app, debugFlags(port), { detached: true, stdio: 'ignore' });
+    child.unref();
+    return;
+  }
+  throw new Error('--launch supports macOS and Windows. Start Codex with --remote-debugging-address=127.0.0.1 and --remote-debugging-port manually, then rerun without --launch.');
 }
 
 async function waitForTargets(port: number, timeoutMs = 30_000): Promise<{ port: number; targets: Target[] }> {

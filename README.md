@@ -76,7 +76,7 @@ The skill defaults to preserving the native layout. It supports four explicit mo
 - `editorial-showcase`: allow a bounded home hero when the reference requires it.
 - `palette-only`: change semantic colors and materials without dominant artwork.
 
-Theme creation, validation, session application, and restore are self-contained TypeScript workflows. They do **not** require CodeDrobe, Dream/Fiona, or another theme application. The runtime uses Node.js and Codex's loopback-only debugging endpoint, never patches the signed app bundle, and may need to be applied again after a full app quit.
+Theme creation, validation, session application, and restore are self-contained TypeScript workflows. They do **not** require CodeDrobe, Dream/Fiona, or another theme application. The runtime uses Node.js and Codex's loopback-only debugging endpoint, never patches the signed app bundle, and may need to be applied again after a full app quit. The launcher supports macOS and Windows; builds that drop the Chromium debugging flags (for example some store packages) cannot be themed and are reported as such.
 
 By default, editable themes live in `~/.codexthemes/themes/<id>/`, shareable packages in `~/.codexthemes/exports/<id>.codex-theme`, and runtime state in `~/.codexthemes/state/`.
 

@@ -32,6 +32,8 @@ npx tsx scripts/switch-theme.ts apply <theme-id> --launch
 
 `--launch` prints `{"status": "scheduled"}` and hands the quit → relaunch → inject sequence to a detached helper that survives the restart (an agent hosted inside Codex dies with it; expect the tool call to be interrupted). Never build your own restart mechanism — no shell wrappers, launchd or scheduled tasks, or script copies; the helper already survives the restart.
 
+The launcher supports macOS and Windows. On Windows it finds the Codex/ChatGPT executable (running process path, `%LOCALAPPDATA%\Programs\...`, or the WindowsApps execution alias — pass `--app` with the full `.exe` path if detection fails), closes it gracefully with `taskkill` (never `/F`), and relaunches it with the debugging flags. If the endpoint never appears after the relaunch, that installed build (for example a Microsoft Store package) drops the debugging flags — report that limitation plainly; never modify files under `WindowsApps` or the installation directory.
+
 ## Step 3: verify — `scheduled` is not success
 
 ```bash

@@ -150,6 +150,8 @@ npx tsx scripts/apply-theme.ts apply /absolute/theme-directory --launch
 
 When no endpoint is live, `--launch` prints `{"status": "scheduled"}` and hands the quit → relaunch → inject sequence to a detached helper that survives the restart. This is required because an agent hosted inside Codex dies together with Codex; expect the current tool call (and possibly the session) to be interrupted by the restart. Never work around the restart yourself: do not write shell wrappers, launchd or scheduled tasks, copies of the script, or any other relaunch mechanism — the `--launch` helper already survives the restart.
 
+The launcher supports macOS and Windows (on Windows it locates the Codex/ChatGPT executable, closes it gracefully with `taskkill` — never `/F` — and relaunches it with the debugging flags; pass `--app` with the full `.exe` path if detection fails). If the endpoint never appears after a Windows relaunch, that installed build (for example a Microsoft Store package) drops the debugging flags — report that limitation plainly and finish source, preview, validation, and packaging instead; never modify files under `WindowsApps`.
+
 `"scheduled"` is not success. After Codex is back, verify before reporting anything:
 
 ```bash
