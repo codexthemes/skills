@@ -154,7 +154,11 @@ When no endpoint is live, `--launch` prints `{"status": "scheduled"}` and hands 
 npx tsx scripts/apply-theme.ts status
 ```
 
-`status` probes the live renderer and reports `"active"` with the injected theme id only when the style element is really in the DOM. If it reports `"inactive"`, read `~/.codexthemes/state/launch.log` for the helper's result and error.
+`status` probes every live Codex page and reports `"active"` with the injected theme id only when the style element is really in the DOM. If it reports `"inactive"`, read `~/.codexthemes/state/launch.log` for the helper's result and error.
+
+If an old theme keeps re-appearing after a successful apply (a stale session from an earlier task is still re-injecting it), get the user's restart permission and force a clean relaunch with `apply ... --launch --relaunch` — never ask the user to quit the app by hand and never invent your own restart mechanism.
+
+For later one-command switching between finished themes, hand off to the `codex-theme-switcher` skill; this skill's apply runtime is for creation-time QA.
 
 The launcher binds debugging to `127.0.0.1`, injects only an owned `<style>` element and CodexThemes page markers, does not modify the signed application bundle, and keeps the theme active across SPA route changes and renderer reloads for the current app session. A full application quit requires reapplying the theme (again with `--launch`). Restore at any time with:
 

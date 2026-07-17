@@ -2,20 +2,18 @@
 
 import { closeSync, openSync } from 'node:fs';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { execFile, spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-import { validateTheme } from './validate-theme.ts';
-import { runtimeStatePath, stateRoot } from './paths.ts';
+import { runtimeStatePath, stateRoot, themesRoot } from './paths.ts';
 
-type Command = 'apply' | 'restore' | 'status';
+type Command = 'list' | 'apply' | 'status' | 'restore';
 
 interface Options {
   command: Command;
-  themeDir?: string;
+  theme?: string;
   port: number;
   launch: boolean;
   /** Force a clean quit+relaunch even when a debugging endpoint is already live. */
@@ -49,18 +47,16 @@ interface RuntimeState {
 
 const execFileAsync = promisify(execFile);
 const statePath = runtimeStatePath();
-const legacyStatePath = path.join(os.homedir(), '.codexthemes', 'runtime.json');
 const defaultPorts = [9335, 9222, 9223];
 
 function parseArgs(argv: string[]): Options {
   const command = argv.shift() as Command | undefined;
-  if (!command || !['apply', 'restore', 'status'].includes(command)) {
-    throw new Error('Usage: apply-theme.ts <apply THEME_DIR|restore|status> [--port 9335] [--launch] [--relaunch] [--app /Applications/Codex.app]');
+  if (!command || !['list', 'apply', 'status', 'restore'].includes(command)) {
+    throw new Error('Usage: switch-theme.ts <list|apply THEME_ID_OR_DIR|status|restore> [--port 9335] [--launch] [--relaunch] [--app /Applications/Codex.app]');
   }
-
   const options: Options = { command, port: 9335, launch: false, relaunch: false, worker: false };
   if (command === 'apply' && argv[0] && !argv[0].startsWith('--')) {
-    options.themeDir = path.resolve(argv.shift()!);
+    options.theme = argv.shift()!;
   }
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -82,8 +78,63 @@ function parseArgs(argv: string[]): Options {
       throw new Error(`Unknown argument: ${arg}`);
     }
   }
-  if (command === 'apply' && !options.themeDir) throw new Error('apply requires an absolute theme directory');
+  if (command === 'apply' && !options.theme) throw new Error('apply requires a theme id from the managed library or an absolute theme directory');
   return options;
+}
+
+export async function resolveThemeDir(theme: string): Promise<string> {
+  const candidates = theme.includes(path.sep) || theme.startsWith('~')
+    ? [path.resolve(theme.replace(/^~(?=\/)/, process.env.HOME || '~'))]
+    : [path.join(themesRoot(), theme), path.resolve(theme)];
+  for (const candidate of candidates) {
+    try {
+      await fs.access(path.join(candidate, 'theme.json'));
+      return candidate;
+    } catch { /* try the next candidate */ }
+  }
+  throw new Error(
+    `Cannot find theme "${theme}". Expected ${path.join(themesRoot(), theme)}/theme.json or an absolute theme directory. ` +
+    'List installed themes with: switch-theme.ts list',
+  );
+}
+
+interface ThemeManifest {
+  id: string;
+  name?: string;
+  css: string;
+  design?: { layoutMode?: string; backgroundScope?: string };
+}
+
+async function readManifest(themeDir: string): Promise<ThemeManifest> {
+  const manifest = JSON.parse(await fs.readFile(path.join(themeDir, 'theme.json'), 'utf8')) as ThemeManifest;
+  if (typeof manifest.id !== 'string' || typeof manifest.css !== 'string') {
+    throw new Error(`${themeDir}/theme.json is missing id or css`);
+  }
+  return manifest;
+}
+
+export async function listThemes(): Promise<Array<{ id: string; name: string; layoutMode: string; themeDir: string }>> {
+  let entries: string[] = [];
+  try {
+    entries = await fs.readdir(themesRoot());
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw error;
+  }
+  const themes: Array<{ id: string; name: string; layoutMode: string; themeDir: string }> = [];
+  for (const entry of entries.sort()) {
+    const themeDir = path.join(themesRoot(), entry);
+    try {
+      const manifest = await readManifest(themeDir);
+      themes.push({
+        id: manifest.id,
+        name: manifest.name ?? manifest.id,
+        layoutMode: manifest.design?.layoutMode ?? 'unknown',
+        themeDir,
+      });
+    } catch { /* skip non-theme directories */ }
+  }
+  return themes;
 }
 
 async function readJson<T>(filename: string): Promise<T | undefined> {
@@ -95,6 +146,13 @@ async function readJson<T>(filename: string): Promise<T | undefined> {
   }
 }
 
+function stateRegistrations(state: RuntimeState | undefined): Registration[] {
+  if (!state) return [];
+  if (state.registrations?.length) return state.registrations;
+  if (state.targetId && state.scriptIdentifier) return [{ targetId: state.targetId, identifier: state.scriptIdentifier }];
+  return [];
+}
+
 async function writeState(state: RuntimeState): Promise<void> {
   await fs.mkdir(path.dirname(statePath), { recursive: true });
   await fs.writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
@@ -102,11 +160,6 @@ async function writeState(state: RuntimeState): Promise<void> {
 
 async function clearState(): Promise<void> {
   await fs.rm(statePath, { force: true });
-  await fs.rm(legacyStatePath, { force: true });
-}
-
-async function readRuntimeState(): Promise<RuntimeState | undefined> {
-  return (await readJson<RuntimeState>(statePath)) ?? (await readJson<RuntimeState>(legacyStatePath));
 }
 
 async function targetsAt(port: number): Promise<Target[]> {
@@ -129,13 +182,6 @@ async function locateTargets(preferredPort: number): Promise<{ port: number; tar
     if (pages.length > 0) return { port, targets: pages };
   }
   return undefined;
-}
-
-function stateRegistrations(state: RuntimeState | undefined): Registration[] {
-  if (!state) return [];
-  if (state.registrations?.length) return state.registrations;
-  if (state.targetId && state.scriptIdentifier) return [{ targetId: state.targetId, identifier: state.scriptIdentifier }];
-  return [];
 }
 
 async function detectMacApp(explicit?: string): Promise<string> {
@@ -163,8 +209,7 @@ async function quitAndWait(app: string): Promise<void> {
   await execFileAsync('osascript', ['-e', `tell application ${JSON.stringify(appName)} to quit`]).catch(() => undefined);
   // The debugging flags only take effect on a fresh instance. If the old
   // instance is still shutting down it holds the Chromium profile singleton
-  // lock, and the relaunched instance silently defers to it and exits, so the
-  // app comes back WITHOUT the debugging endpoint. Wait for a real exit.
+  // lock, and the relaunched instance silently defers to it and exits.
   const deadline = Date.now() + 45_000;
   while (Date.now() < deadline) {
     if (!(await mainProcessRunning(app))) return;
@@ -327,13 +372,37 @@ const restoreSource = `(() => {
   document.querySelectorAll('[data-codexthemes-page]').forEach((node) => node.removeAttribute('data-codexthemes-page'));
 })()`;
 
-async function connect(options: Options): Promise<{ port: number; targets: Target[] } | undefined> {
-  let found = await locateTargets(options.port);
-  if (!found && options.launch) {
-    await launchWithDebugging(options.port, options.app);
-    found = await waitForTargets(options.port);
-  }
-  return found;
+export function launchLogPath(): string {
+  return path.join(stateRoot(), 'launch.log');
+}
+
+/**
+ * Run the quit → relaunch → inject sequence in a detached helper process.
+ * When the applying agent is hosted inside Codex itself, quitting Codex kills
+ * the agent's tool call before the relaunch can happen. The helper starts its
+ * own session, so it survives the restart; its output lands in launch.log.
+ */
+async function scheduleDetachedLaunch(options: Options, themeDir: string): Promise<void> {
+  await fs.mkdir(stateRoot(), { recursive: true });
+  const logPath = launchLogPath();
+  const logFd = openSync(logPath, 'w');
+  const args = [
+    ...process.execArgv,
+    process.argv[1]!,
+    'apply', themeDir,
+    '--launch', '--launch-worker',
+    ...(options.relaunch ? ['--relaunch'] : []),
+    '--port', String(options.port),
+    ...(options.app ? ['--app', options.app] : []),
+  ];
+  const child = spawn(process.execPath, args, { detached: true, stdio: ['ignore', logFd, logFd] });
+  child.unref();
+  closeSync(logFd);
+  console.log(JSON.stringify({
+    status: 'scheduled',
+    note: 'Codex is restarting with the debugging endpoint; a detached helper that survives the restart will inject the theme. This tool call may be interrupted by the restart. Afterwards verify with: switch-theme.ts status',
+    logPath,
+  }, null, 2));
 }
 
 async function injectIntoTarget(target: Target, previous: Registration[], source: string): Promise<Registration> {
@@ -353,135 +422,69 @@ async function injectIntoTarget(target: Target, previous: Registration[], source
   }
 }
 
-export function launchLogPath(): string {
-  return path.join(stateRoot(), 'launch.log');
-}
-
-/**
- * Run the quit → relaunch → inject sequence in a detached helper process.
- * When the applying agent is hosted inside Codex itself, quitting Codex kills
- * the agent's tool call (and any process in its group) before the relaunch
- * can happen. The helper starts its own session, so it survives the restart
- * and finishes the injection on its own; its output lands in launch.log.
- */
-async function scheduleDetachedLaunch(options: Options): Promise<void> {
-  await fs.mkdir(stateRoot(), { recursive: true });
-  const logPath = launchLogPath();
-  const logFd = openSync(logPath, 'w');
-  const args = [
-    ...process.execArgv,
-    process.argv[1]!,
-    'apply', options.themeDir!,
-    '--launch', '--launch-worker',
-    ...(options.relaunch ? ['--relaunch'] : []),
-    '--port', String(options.port),
-    ...(options.app ? ['--app', options.app] : []),
-  ];
-  const child = spawn(process.execPath, args, { detached: true, stdio: ['ignore', logFd, logFd] });
-  child.unref();
-  closeSync(logFd);
-  console.log(JSON.stringify({
-    status: 'scheduled',
-    note: 'Codex is restarting with the debugging endpoint; a detached helper that survives the restart will inject the theme. This tool call may be interrupted by the restart. Afterwards verify with: apply-theme.ts status',
-    logPath,
-  }, null, 2));
-}
-
 async function apply(options: Options): Promise<void> {
-  const themeDir = options.themeDir!;
-  const validation = await validateTheme(themeDir);
-  if (!validation.valid) throw new Error(`Theme validation failed:\n${validation.errors.join('\n')}`);
-  const manifest = JSON.parse(await fs.readFile(path.join(themeDir, 'theme.json'), 'utf8')) as {
-    id: string; css: string; design: { backgroundScope: string };
-  };
+  const themeDir = await resolveThemeDir(options.theme!);
+  const manifest = await readManifest(themeDir);
   const css = await inlineLocalAssets(await fs.readFile(path.join(themeDir, manifest.css), 'utf8'), themeDir);
-  // --relaunch forces a clean quit+relaunch even when an endpoint is live: it
-  // evicts stale sessions from earlier tasks whose on-new-document
+  const backgroundScope = manifest.design?.backgroundScope ?? 'home';
+
+  let found = await locateTargets(options.port);
+  // --relaunch forces a clean quit+relaunch even when an endpoint is live:
+  // it evicts stale sessions from earlier tasks whose on-new-document
   // registrations keep re-injecting an old theme that a hot swap cannot
   // remove (their identifiers belong to other CDP sessions).
-  const live = await locateTargets(options.port);
-  if (options.launch && !options.worker && (!live || options.relaunch)) {
-    await scheduleDetachedLaunch(options);
-    return;
+  if (!found || options.relaunch) {
+    if (!options.launch) {
+      throw new Error(found
+        ? 'A live endpoint exists; --relaunch also requires --launch (and the user\'s explicit restart permission).'
+        : 'No debuggable Codex renderer found. With explicit restart permission, rerun with --launch; no external theme program is required.');
+    }
+    if (!options.worker) {
+      await scheduleDetachedLaunch(options, themeDir);
+      return;
+    }
+    await launchWithDebugging(options.port, options.app);
+    found = await waitForTargets(options.port);
   }
-  if (options.relaunch && !options.launch) {
-    throw new Error('--relaunch also requires --launch (and the user\'s explicit restart permission).');
-  }
-  const connection = options.worker && options.relaunch
-    ? await (async () => {
-        await launchWithDebugging(options.port, options.app);
-        return waitForTargets(options.port);
-      })()
-    : await connect(options);
-  if (!connection) {
-    throw new Error('No debuggable Codex renderer found. With explicit restart permission, rerun with --launch; no external theme program is required.');
-  }
-  const source = runtimeSource(manifest.id, manifest.design.backgroundScope, css);
-  const previous = stateRegistrations(await readRuntimeState());
+
+  const source = runtimeSource(manifest.id, backgroundScope, css);
+  const previous = stateRegistrations(await readJson<RuntimeState>(statePath));
   const registrations: Registration[] = [];
   // Theme every app page, not just the first one /json/list happens to return;
   // a single-window assumption previously themed one window while status
   // probed another, producing conflicting evidence.
-  for (const target of connection.targets) {
+  for (const target of found.targets) {
     registrations.push(await injectIntoTarget(target, previous, source));
   }
   await writeState({
-    port: connection.port,
+    port: found.port,
     themeId: manifest.id,
     registrations,
     ...(registrations[0] ? { targetId: registrations[0].targetId, scriptIdentifier: registrations[0].identifier } : {}),
   });
-  console.log(JSON.stringify({
-    status: 'active',
-    themeId: manifest.id,
-    port: connection.port,
-    pagesThemed: registrations.length,
-    warnings: validation.warnings,
-  }, null, 2));
+  console.log(JSON.stringify({ status: 'active', themeId: manifest.id, port: found.port, pagesThemed: registrations.length }, null, 2));
 }
 
-async function restore(options: Options): Promise<void> {
-  const state = await readRuntimeState();
-  const connection = await locateTargets(state?.port ?? options.port);
-  if (!connection) {
-    await clearState();
-    console.log(JSON.stringify({ status: 'inactive', note: 'Codex was not running; local runtime state was cleared.' }, null, 2));
-    return;
+async function probeTarget(target: Target): Promise<string | null> {
+  const client = await CdpClient.connect(target.webSocketDebuggerUrl);
+  try {
+    const evaluated = await client.call('Runtime.evaluate', {
+      expression: "document.documentElement.dataset.codexthemesTheme ?? ''",
+      returnByValue: true,
+    });
+    return evaluated.result?.value || null;
+  } finally {
+    client.close();
   }
-  const previous = stateRegistrations(state);
-  for (const target of connection.targets) {
-    const client = await CdpClient.connect(target.webSocketDebuggerUrl);
-    try {
-      for (const registration of previous) {
-        if (registration.targetId === target.id) {
-          await client.call('Page.removeScriptToEvaluateOnNewDocument', { identifier: registration.identifier }).catch(() => undefined);
-        }
-      }
-      await client.call('Runtime.evaluate', { expression: restoreSource, awaitPromise: true });
-    } finally {
-      client.close();
-    }
-  }
-  await clearState();
-  console.log(JSON.stringify({ status: 'inactive', restoredThemeId: state?.themeId, pagesRestored: connection.targets.length }, null, 2));
 }
 
 async function status(options: Options): Promise<void> {
-  const state = await readRuntimeState();
+  const state = await readJson<RuntimeState>(statePath);
   const found = await locateTargets(state?.port ?? options.port);
   const pages: Array<{ targetId: string; themeId: string | null }> = [];
   if (found) {
     for (const target of found.targets) {
-      const client = await CdpClient.connect(target.webSocketDebuggerUrl);
-      try {
-        const evaluated = await client.call('Runtime.evaluate', {
-          expression: "document.documentElement.dataset.codexthemesTheme ?? ''",
-          returnByValue: true,
-        });
-        pages.push({ targetId: target.id, themeId: evaluated.result?.value || null });
-      } finally {
-        client.close();
-      }
+      pages.push({ targetId: target.id, themeId: await probeTarget(target) });
     }
   }
   const themed = pages.filter((page) => page.themeId);
@@ -496,10 +499,50 @@ async function status(options: Options): Promise<void> {
   }, null, 2));
 }
 
+async function restore(options: Options): Promise<void> {
+  const state = await readJson<RuntimeState>(statePath);
+  const found = await locateTargets(state?.port ?? options.port);
+  if (!found) {
+    await clearState();
+    console.log(JSON.stringify({ status: 'inactive', note: 'Codex was not running; local runtime state was cleared.' }, null, 2));
+    return;
+  }
+  const previous = stateRegistrations(state);
+  for (const target of found.targets) {
+    const client = await CdpClient.connect(target.webSocketDebuggerUrl);
+    try {
+      for (const registration of previous) {
+        if (registration.targetId === target.id) {
+          await client.call('Page.removeScriptToEvaluateOnNewDocument', { identifier: registration.identifier }).catch(() => undefined);
+        }
+      }
+      await client.call('Runtime.evaluate', { expression: restoreSource, awaitPromise: true });
+    } finally {
+      client.close();
+    }
+  }
+  await clearState();
+  console.log(JSON.stringify({ status: 'inactive', restoredThemeId: state?.themeId, pagesRestored: found.targets.length }, null, 2));
+}
+
+async function list(options: Options): Promise<void> {
+  const themes = await listThemes();
+  const state = await readJson<RuntimeState>(statePath);
+  const found = await locateTargets(state?.port ?? options.port);
+  let activeThemeId: string | null = null;
+  if (found && found.targets[0]) activeThemeId = await probeTarget(found.targets[0]).catch(() => null);
+  console.log(JSON.stringify({
+    themes: themes.map((theme) => ({ ...theme, active: theme.id === activeThemeId })),
+    activeThemeId,
+    themesRoot: themesRoot(),
+  }, null, 2));
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   if (options.command === 'apply') await apply(options);
   else if (options.command === 'restore') await restore(options);
+  else if (options.command === 'list') await list(options);
   else await status(options);
 }
 

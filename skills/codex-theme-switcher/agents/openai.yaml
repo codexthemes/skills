@@ -1,0 +1,4 @@
+interface:
+  display_name: "CodexThemes Switcher"
+  short_description: "Switch, apply, and restore local Codex themes"
+  default_prompt: "Use $codex-theme-switcher to list my installed Codex themes and apply the one I name, verifying it is really active."

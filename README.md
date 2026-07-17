@@ -31,6 +31,12 @@ npx skills add codexthemes/skills --skill codex-theme-finder -g -a codex
 npx skills add codexthemes/skills --skill codex-theme-installer -g -a codex
 ```
 
+Install `codex-theme-switcher` to apply, switch, and restore installed themes with one command:
+
+```bash
+npx skills add codexthemes/skills --skill codex-theme-switcher -g -a codex
+```
+
 List the skills available in this repository:
 
 ```bash
@@ -92,7 +98,13 @@ Use $codex-theme-finder to search codexthemes.ai for a dark anime Codex theme.
 Use $codex-theme-installer to install https://codexthemes.ai/themes/noir-anime locally.
 ```
 
-Both work anonymously within a free API quota; when the quota or rate limit is hit (HTTP 429), they guide you to create an API key at [codexthemes.ai/settings/apikeys](https://codexthemes.ai/settings/apikeys) for higher limits. Installing places source files only — apply the theme to the running app with `codex-theme-creator`'s reversible apply workflow.
+Both work anonymously within a free API quota; when the quota or rate limit is hit (HTTP 429), they guide you to create an API key at [codexthemes.ai/settings/apikeys](https://codexthemes.ai/settings/apikeys) for higher limits. Installing places source files only.
+
+`codex-theme-switcher` activates themes: it lists the local library, hot-swaps the running app when the debugging endpoint is live, schedules a restart-surviving relaunch when it is not (or when `--relaunch` forces a clean restart), verifies the result against the real DOM, and restores the native look:
+
+```text
+Use $codex-theme-switcher to switch my Codex theme to noir-anime.
+```
 
 ## Repository layout
 
@@ -117,6 +129,10 @@ skills/codex-theme-installer/
 ├── SKILL.md
 ├── agents/openai.yaml
 ├── references/
+└── scripts/
+skills/codex-theme-switcher/
+├── SKILL.md
+├── agents/openai.yaml
 └── scripts/
 ```
 
