@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 import { runtimeStatePath, stateRoot, themesRoot } from './paths.ts';
+import { decodePng, judgeSamples, textSamplerSource, type ReadabilityResult, type TextSample } from './readability.ts';
 
 type Command = 'list' | 'apply' | 'status' | 'restore';
 
@@ -18,6 +19,8 @@ interface Options {
   launch: boolean;
   /** Force a clean quit+relaunch even when a debugging endpoint is already live. */
   relaunch: boolean;
+  /** Keep the theme active even when the readability check fails. */
+  force: boolean;
   app?: string;
   /** Internal: run the quit/relaunch/inject sequence inline (used by the detached helper). */
   worker: boolean;
@@ -54,7 +57,7 @@ function parseArgs(argv: string[]): Options {
   if (!command || !['list', 'apply', 'status', 'restore'].includes(command)) {
     throw new Error('Usage: switch-theme.ts <list|apply THEME_ID_OR_DIR|status|restore> [--port 9335] [--launch] [--relaunch] [--app /Applications/Codex.app]');
   }
-  const options: Options = { command, port: 9335, launch: false, relaunch: false, worker: false };
+  const options: Options = { command, port: 9335, launch: false, relaunch: false, force: false, worker: false };
   if (command === 'apply' && argv[0] && !argv[0].startsWith('--')) {
     options.theme = argv.shift()!;
   }
@@ -68,6 +71,8 @@ function parseArgs(argv: string[]): Options {
       options.launch = true;
     } else if (arg === '--relaunch') {
       options.relaunch = true;
+    } else if (arg === '--force') {
+      options.force = true;
     } else if (arg === '--launch-worker') {
       options.worker = true;
     } else if (arg === '--app') {
@@ -484,6 +489,7 @@ async function scheduleDetachedLaunch(options: Options, themeDir: string): Promi
     'apply', themeDir,
     '--launch', '--launch-worker',
     ...(options.relaunch ? ['--relaunch'] : []),
+    ...(options.force ? ['--force'] : []),
     '--port', String(options.port),
     ...(options.app ? ['--app', options.app] : []),
   ];
@@ -540,7 +546,8 @@ async function apply(options: Options): Promise<void> {
   }
 
   const source = runtimeSource(manifest.id, backgroundScope, css);
-  const previous = stateRegistrations(await readJson<RuntimeState>(statePath));
+  const previousState = await readJson<RuntimeState>(statePath);
+  const previous = stateRegistrations(previousState);
   const registrations: Registration[] = [];
   // Theme every app page, not just the first one /json/list happens to return;
   // a single-window assumption previously themed one window while status
@@ -548,13 +555,103 @@ async function apply(options: Options): Promise<void> {
   for (const target of found.targets) {
     registrations.push(await injectIntoTarget(target, previous, source));
   }
+
+  // Readability gate: measure the real rendered pixels. A theme that leaves
+  // text unreadable must never stay on the user's screen.
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  const failures: ReadabilityResult[] = [];
+  for (const target of found.targets) {
+    failures.push(...(await checkReadability(target)));
+  }
+  if (failures.length >= 2 && !options.force) {
+    const revertedTo = await revertAfterFailedApply(found.port, found.targets, registrations, previousState, manifest.id);
+    console.log(JSON.stringify({
+      status: 'reverted',
+      appliedThemeId: manifest.id,
+      revertedTo,
+      reason: 'readability check failed: the applied theme leaves visible text unreadable on the live pages',
+      failures: failures.slice(0, 10),
+      note: 'The theme is broken as shipped — report this to the user and suggest fixing it with codex-theme-creator. Re-run with --force only if the user explicitly wants to keep it anyway.',
+    }, null, 2));
+    process.exitCode = 1;
+    return;
+  }
+
   await writeState({
     port: found.port,
     themeId: manifest.id,
     registrations,
     ...(registrations[0] ? { targetId: registrations[0].targetId, scriptIdentifier: registrations[0].identifier } : {}),
   });
-  console.log(JSON.stringify({ status: 'active', themeId: manifest.id, port: found.port, pagesThemed: registrations.length }, null, 2));
+  console.log(JSON.stringify({
+    status: 'active',
+    themeId: manifest.id,
+    port: found.port,
+    pagesThemed: registrations.length,
+    readability: failures.length === 0 ? 'pass' : { failed: failures.length, kept: true, worst: failures.slice(0, 5) },
+  }, null, 2));
+}
+
+async function checkReadability(target: Target): Promise<ReadabilityResult[]> {
+  const client = await CdpClient.connect(target.webSocketDebuggerUrl);
+  try {
+    const sampled = await client.call('Runtime.evaluate', { expression: textSamplerSource, returnByValue: true });
+    const parsed = JSON.parse(sampled.result.value) as { samples: TextSample[]; viewportWidth: number };
+    const shot = await client.call('Page.captureScreenshot', { format: 'png' });
+    const image = decodePng(Buffer.from(shot.data, 'base64'));
+    return judgeSamples(image, parsed.samples.filter((sample) => sample.size >= 9), parsed.viewportWidth)
+      .filter((result) => result.ratio < 2.5);
+  } catch {
+    // A failed measurement must not block applying; the gate only acts on
+    // positive evidence of unreadable text.
+    return [];
+  } finally {
+    client.close();
+  }
+}
+
+async function revertAfterFailedApply(
+  port: number,
+  targets: Target[],
+  failedRegistrations: Registration[],
+  previousState: RuntimeState | undefined,
+  failedThemeId: string,
+): Promise<string> {
+  const fallbackId = previousState?.themeId;
+  if (fallbackId && fallbackId !== failedThemeId) {
+    try {
+      const prevDir = await resolveThemeDir(fallbackId);
+      const prevManifest = await readManifest(prevDir);
+      const prevCss = await inlineLocalAssets(await fs.readFile(path.join(prevDir, prevManifest.css), 'utf8'), prevDir);
+      const prevSource = runtimeSource(prevManifest.id, prevManifest.design?.backgroundScope ?? 'home', prevCss);
+      const prevRegistrations: Registration[] = [];
+      for (const target of targets) {
+        prevRegistrations.push(await injectIntoTarget(target, failedRegistrations, prevSource));
+      }
+      await writeState({
+        port,
+        themeId: prevManifest.id,
+        registrations: prevRegistrations,
+        ...(prevRegistrations[0] ? { targetId: prevRegistrations[0].targetId, scriptIdentifier: prevRegistrations[0].identifier } : {}),
+      });
+      return prevManifest.id;
+    } catch { /* fall through to native restore */ }
+  }
+  for (const target of targets) {
+    const client = await CdpClient.connect(target.webSocketDebuggerUrl);
+    try {
+      for (const registration of failedRegistrations) {
+        if (registration.targetId === target.id) {
+          await client.call('Page.removeScriptToEvaluateOnNewDocument', { identifier: registration.identifier }).catch(() => undefined);
+        }
+      }
+      await client.call('Runtime.evaluate', { expression: restoreSource, awaitPromise: true });
+    } finally {
+      client.close();
+    }
+  }
+  await clearState();
+  return 'native';
 }
 
 async function probeTarget(target: Target): Promise<string | null> {

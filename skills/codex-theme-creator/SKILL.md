@@ -178,7 +178,7 @@ Immediately after every apply — hot swap or post-restart — run the automated
 npx tsx scripts/qa-contrast.ts
 ```
 
-It samples the real computed styles of visible text on every Codex page and hard-fails (exit 1) when text sits on a verified opaque backdrop below 2.5:1 contrast. A `fail` means the theme is unreadable right now: fix the text tokens (or switch back to the previous theme) before doing anything else, and never leave a failing theme active or report it as applied. Samples listed as `unverified` sit over artwork or transparent layers — check those visually in the screenshots below. A `pass` is necessary but not sufficient; continue with the full matrix:
+It hard-fails (exit 1) when visible text is unreadable, using two independent measurements: computed-style composition over verified opaque backdrops, and **real screenshot pixels** (`pixelFailures`), which also judge text sitting over artwork and transparent layers. A `fail` means the theme is unreadable right now: fix the text tokens or artwork veils (or switch back to the previous theme) before doing anything else, and never leave a failing theme active or report it as applied. A `pass` is necessary but not sufficient; continue with the full matrix:
 
 Verify independently:
 

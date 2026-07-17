@@ -34,6 +34,10 @@ npx tsx scripts/switch-theme.ts apply <theme-id> --launch
 
 The launcher supports macOS and Windows. On Windows it finds the Codex/ChatGPT executable (running process path, `%LOCALAPPDATA%\Programs\...`, or the WindowsApps execution alias — pass `--app` with the full `.exe` path if detection fails), closes it gracefully with `taskkill` (never `/F`), and relaunches it with the debugging flags. If the endpoint never appears after the relaunch, that installed build (for example a Microsoft Store package) drops the debugging flags — report that limitation plainly; never modify files under `WindowsApps` or the installation directory.
 
+## Built-in readability gate
+
+Every apply measures the real rendered pixels after injection (screenshot-based contrast of visible text). If the theme leaves text unreadable, the apply **automatically reverts** to the previously active theme (or the native look) and reports `{"status": "reverted", "failures": [...]}` with the measured evidence. Tell the user the theme is broken as shipped and offer to fix it with codex-theme-creator; pass `--force` only when the user explicitly says they want to keep the unreadable theme anyway.
+
 ## Step 3: verify — `scheduled` is not success
 
 ```bash

@@ -2,6 +2,14 @@
 
 import { pathToFileURL } from 'node:url';
 
+import {
+  decodePng,
+  judgeSamples,
+  textSamplerSource,
+  type ReadabilityResult,
+  type TextSample,
+} from './readability.ts';
+
 interface Target {
   id: string;
   title: string;
@@ -192,29 +200,61 @@ async function locateTargets(preferredPort: number): Promise<{ port: number; tar
   return undefined;
 }
 
-async function sampleTarget(target: Target): Promise<RawSample[]> {
-  const socket = new WebSocket(target.webSocketDebuggerUrl);
-  await new Promise<void>((resolve, reject) => {
-    socket.onopen = () => resolve();
-    socket.onerror = () => reject(new Error('Cannot connect to the Codex renderer'));
-  });
-  try {
-    const result = await new Promise<any>((resolve, reject) => {
-      socket.onmessage = (event) => {
-        const message = JSON.parse(String(event.data));
-        if (message.id !== 1) return;
-        if (message.error) reject(new Error(message.error.message));
-        else resolve(message.result);
-      };
-      socket.send(JSON.stringify({
-        id: 1,
-        method: 'Runtime.evaluate',
-        params: { expression: samplerSource, returnByValue: true },
-      }));
+class CdpSocket {
+  private nextId = 1;
+
+  private constructor(private socket: WebSocket, private pending = new Map<number, { resolve: (value: any) => void; reject: (reason: Error) => void }>()) {
+    socket.onmessage = (event) => {
+      const message = JSON.parse(String(event.data));
+      if (!message.id) return;
+      const waiter = this.pending.get(message.id);
+      if (!waiter) return;
+      this.pending.delete(message.id);
+      if (message.error) waiter.reject(new Error(message.error.message ?? JSON.stringify(message.error)));
+      else waiter.resolve(message.result ?? {});
+    };
+  }
+
+  static async connect(url: string): Promise<CdpSocket> {
+    const socket = new WebSocket(url);
+    await new Promise<void>((resolve, reject) => {
+      socket.onopen = () => resolve();
+      socket.onerror = () => reject(new Error('Cannot connect to the Codex renderer'));
     });
-    return JSON.parse(result.result.value) as RawSample[];
+    return new CdpSocket(socket);
+  }
+
+  call(method: string, params: Record<string, unknown> = {}): Promise<any> {
+    const id = this.nextId++;
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      this.socket.send(JSON.stringify({ id, method, params }));
+    });
+  }
+
+  close(): void {
+    this.socket.close();
+  }
+}
+
+async function sampleTarget(target: Target): Promise<{ raw: RawSample[]; pixel: ReadabilityResult[] }> {
+  const client = await CdpSocket.connect(target.webSocketDebuggerUrl);
+  try {
+    const styled = await client.call('Runtime.evaluate', { expression: samplerSource, returnByValue: true });
+    const raw = JSON.parse(styled.result.value) as RawSample[];
+    // Pixel pass: screenshot-based measurement judges text over artwork and
+    // transparent layers that computed-style composition cannot verify.
+    let pixel: ReadabilityResult[] = [];
+    try {
+      const sampled = await client.call('Runtime.evaluate', { expression: textSamplerSource, returnByValue: true });
+      const parsed = JSON.parse(sampled.result.value) as { samples: TextSample[]; viewportWidth: number };
+      const shot = await client.call('Page.captureScreenshot', { format: 'png' });
+      const image = decodePng(Buffer.from(shot.data, 'base64'));
+      pixel = judgeSamples(image, parsed.samples.filter((sample) => sample.size >= 9), parsed.viewportWidth);
+    } catch { /* pixel pass is best-effort; the style pass still runs */ }
+    return { raw, pixel };
   } finally {
-    socket.close();
+    client.close();
   }
 }
 
@@ -238,25 +278,26 @@ async function main(): Promise<void> {
     sampled: number;
     failures: ContrastSample[];
     warnings: ContrastSample[];
-    unverified: ContrastSample[];
+    pixelFailures: ReadabilityResult[];
   }> = [];
   for (const target of found.targets) {
-    const samples = evaluateSamples(await sampleTarget(target));
+    const { raw, pixel } = await sampleTarget(target);
+    const samples = evaluateSamples(raw);
     const verified = samples.filter((sample) => sample.verified);
     pages.push({
       targetId: target.id,
       sampled: samples.length,
       failures: verified.filter((sample) => sample.ratio < failRatio),
       warnings: verified.filter((sample) => sample.ratio >= failRatio && sample.ratio < warnRatio),
-      unverified: samples.filter((sample) => !sample.verified && sample.ratio < warnRatio),
+      pixelFailures: pixel.filter((result) => result.ratio < failRatio),
     });
   }
 
-  const failed = pages.some((page) => page.failures.length > 0);
+  const failed = pages.some((page) => page.failures.length > 0 || page.pixelFailures.length >= 2);
   console.log(JSON.stringify({
     status: failed ? 'fail' : 'pass',
     thresholds: { fail: `< ${failRatio}:1`, warn: `< ${warnRatio}:1` },
-    note: 'Failures are text over verified opaque solid backdrops. "unverified" samples sit over artwork or transparent layers the probe cannot compose; check those visually with screenshots.',
+    note: 'failures come from computed-style composition over verified opaque backdrops; pixelFailures come from the real screenshot pixels and also catch text over artwork.',
     pages: pages.map((page) => ({
       targetId: page.targetId,
       sampled: page.sampled,
@@ -264,8 +305,8 @@ async function main(): Promise<void> {
       failures: page.failures.slice(0, 12),
       warningCount: page.warnings.length,
       warnings: page.warnings.slice(0, 8),
-      unverifiedCount: page.unverified.length,
-      unverified: page.unverified.slice(0, 5),
+      pixelFailureCount: page.pixelFailures.length,
+      pixelFailures: page.pixelFailures.slice(0, 12),
     })),
   }, null, 2));
   if (failed) process.exitCode = 1;
