@@ -6,16 +6,16 @@ The repository is the canonical source for the skill served through [codexthemes
 
 ## Install
 
-Install `new-theme` globally for Codex:
+Install `codex-themes-creator` globally for Codex:
 
 ```bash
-npx skills add codexthemes/skills --skill new-theme -g -a codex
+npx skills add codexthemes/skills --skill codex-themes-creator -g -a codex
 ```
 
 Install it in the current project instead:
 
 ```bash
-npx skills add codexthemes/skills --skill new-theme -a codex
+npx skills add codexthemes/skills --skill codex-themes-creator -a codex
 ```
 
 List the skills available in this repository:
@@ -27,7 +27,7 @@ npx skills add codexthemes/skills --list
 Update an installed copy:
 
 ```bash
-npx skills update new-theme
+npx skills update codex-themes-creator
 ```
 
 You can also give an agent this URL directly:
@@ -43,11 +43,11 @@ The website entrypoint tells the agent to load the canonical skill and required 
 Examples:
 
 ```text
-Use $new-theme to create a light Codex theme from this reference image. Keep the native layout and use the artwork only on the home page.
+Use $codex-themes-creator to create a light Codex theme from this reference image. Keep the native layout and use the artwork only on the home page.
 ```
 
 ```text
-Use $new-theme to create a native-immersive theme. Show the background on conversations too, and verify settings, menus, diffs, terminal, sidebar hover states, and narrow windows.
+Use $codex-themes-creator to create a native-immersive theme. Show the background on conversations too, and verify settings, menus, diffs, terminal, sidebar hover states, and narrow windows.
 ```
 
 The skill defaults to preserving the native layout. It supports four explicit modes:
@@ -60,7 +60,7 @@ The skill defaults to preserving the native layout. It supports four explicit mo
 ## Repository layout
 
 ```text
-skills/new-theme/
+skills/codex-themes-creator/
 ├── SKILL.md
 ├── agents/openai.yaml
 ├── assets/
@@ -68,7 +68,9 @@ skills/new-theme/
 └── scripts/
 ```
 
-The root README is for people. Everything inside `skills/new-theme/` is the installable agent skill.
+The root README is for people. Everything inside `skills/codex-themes-creator/` is the installable agent skill.
+
+> This skill was previously named `new-theme`. Reinstall it using the new name and remove the old local directory if both versions are present; keeping both can make Skill routing ambiguous.
 
 ## Validation
 
@@ -87,7 +89,7 @@ npm run check
 - A generated theme must record the source and redistribution rights for every packaged asset.
 - “Codex” and “OpenAI” are trademarks of their respective owners. This project is independent and is not endorsed by OpenAI.
 
-See [NOTICE](NOTICE) and [skills/new-theme/references/asset-rights.md](skills/new-theme/references/asset-rights.md).
+See [NOTICE](NOTICE) and [skills/codex-themes-creator/references/asset-rights.md](skills/codex-themes-creator/references/asset-rights.md).
 
 ## License
 

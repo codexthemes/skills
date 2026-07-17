@@ -1,5 +1,5 @@
 ---
-name: new-theme
+name: codex-themes-creator
 description: Create, redesign, validate, preview, package, and prepare cohesive themes for the official Codex desktop app from a visual brief or reference image. Use when a user asks for a new Codex theme, wants to preserve or adapt the native Codex layout, wants artwork on the home or conversation page, reports inconsistent themed surfaces, or needs a portable .codex-theme submission for CodexThemes.
 ---
 

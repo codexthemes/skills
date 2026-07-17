@@ -1,4 +1,0 @@
-interface:
-  display_name: "CodexThemes New Theme"
-  short_description: "Design and verify cohesive Codex desktop themes"
-  default_prompt: "Use $new-theme to create a cohesive, native-safe Codex desktop theme from my brief or reference image, then validate every required Codex surface."

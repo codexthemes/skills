@@ -47,7 +47,7 @@ try {
   assert.equal(bad.valid, false);
   assert.match(bad.errors.join('\n'), /broad descendant state override/);
 
-  console.log('All TypeScript new-theme skill tests passed.');
+  console.log('All TypeScript codex-themes-creator skill tests passed.');
 } finally {
   await fs.rm(tempDir, { recursive: true, force: true });
 }
