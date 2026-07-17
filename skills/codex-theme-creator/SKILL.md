@@ -114,6 +114,8 @@ Define one owner for every divider, outline, sidebar edge, card boundary, and he
 
 For light themes, keep settings, menus, dialogs, output/diff panels, code surfaces, and terminal hosts in the same light semantic system unless the contract deliberately defines a contrast panel. Theme terminal host, xterm viewport, and xterm screen together.
 
+Changing a surface's background does not restyle its text. The native app (especially in dark mode) sets **explicit** light text colors on many descendants, and an inherited `color` on `main`, `aside`, or `header` never overrides an explicit descendant color. Whenever a background flips luminance (a light theme over the native dark mode, or the reverse), override the text tokens on the same descendants that carry them — message bodies, markdown content, list items, buttons, labels — not just the container. This is the single most common way a theme ships unreadable.
+
 Install the stylesheet before asynchronously decoding large artwork so cold launch does not flash the native page and then jump to a different layout.
 
 Increment the manifest version after every visible change.
@@ -167,6 +169,14 @@ npx tsx scripts/apply-theme.ts restore
 ```
 
 If standalone application is unavailable on the current platform, finish the source, preview, validation, and package. State the application limitation plainly; never silently fall back to another installed injector.
+
+Immediately after every apply — hot swap or post-restart — run the automated readability gate before anything else:
+
+```bash
+npx tsx scripts/qa-contrast.ts
+```
+
+It samples the real computed styles of visible text on every Codex page and hard-fails (exit 1) when text sits on a verified opaque backdrop below 2.5:1 contrast. A `fail` means the theme is unreadable right now: fix the text tokens (or switch back to the previous theme) before doing anything else, and never leave a failing theme active or report it as applied. Samples listed as `unverified` sit over artwork or transparent layers — check those visually in the screenshots below. A `pass` is necessary but not sufficient; continue with the full matrix:
 
 Verify independently:
 

@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 import { parseScaffoldArgs, scaffoldTheme, type LayoutMode } from './scaffold-theme.ts';
 import { inlineLocalAssets, runtimeSource } from './apply-theme.ts';
+import { contrastRatio, effectiveBackground, evaluateSamples, parseColor } from './qa-contrast.ts';
 import { exportTheme } from './export-theme.ts';
 import { exportsRoot, runtimeStatePath, themesRoot } from './paths.ts';
 import { validateTheme } from './validate-theme.ts';
@@ -68,6 +69,25 @@ try {
   const bad = await validateTheme(badDir);
   assert.equal(bad.valid, false);
   assert.match(bad.errors.join('\n'), /broad descendant state override/);
+
+  assert.deepEqual(parseColor('rgb(255, 250, 236)'), { r: 255, g: 250, b: 236, a: 1 });
+  assert.deepEqual(parseColor('rgba(43, 41, 37, 0.5)'), { r: 43, g: 41, b: 37, a: 0.5 });
+  assert.equal(parseColor('transparent'), null);
+  const white = { r: 255, g: 255, b: 255, a: 1 };
+  const black = { r: 0, g: 0, b: 0, a: 1 };
+  assert.ok(Math.abs(contrastRatio(white, black) - 21) < 0.1);
+  assert.ok(contrastRatio(white, white) === 1);
+  assert.equal(effectiveBackground(['rgba(255, 250, 236, 0.5)', 'rgb(0, 0, 0)']).a, 1);
+  assert.ok(effectiveBackground(['rgba(255, 250, 236, 0.5)']).a < 0.99);
+  const judged = evaluateSamples([
+    { text: 'washed out', path: 'main > p', color: 'rgba(255, 255, 255, 0.75)', stack: ['rgb(247, 238, 217)'], image: false, size: 14 },
+    { text: 'readable', path: 'main > p', color: 'rgb(43, 41, 37)', stack: ['rgb(247, 238, 217)'], image: false, size: 14 },
+    { text: 'over artwork', path: 'main > h1', color: 'rgb(255, 255, 255)', stack: [], image: true, size: 24 },
+  ]);
+  const washedOut = judged.find((sample) => sample.text === 'washed out')!;
+  assert.ok(washedOut.ratio < 2.5 && washedOut.verified);
+  assert.ok(judged.find((sample) => sample.text === 'readable')!.ratio > 4.5);
+  assert.equal(judged.find((sample) => sample.text === 'over artwork')!.verified, false);
 
   console.log('All TypeScript codex-theme-creator skill tests passed.');
 } finally {
