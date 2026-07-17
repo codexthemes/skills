@@ -1,0 +1,45 @@
+/* __THEME_ID__: semantic palette only; preserve native geometry. */
+:root[data-codexthemes-theme="__THEME_ID__"] {
+  --ct-canvas: #fffaf6;
+  --ct-surface: #fffdfb;
+  --ct-raised: #ffffff;
+  --ct-text: #3f3033;
+  --ct-muted: #806d72;
+  --ct-accent: #bd4968;
+  --ct-border: #ead3d9;
+}
+
+main.main-surface,
+aside.app-shell-left-panel {
+  color: var(--ct-text);
+  background: var(--ct-canvas);
+  border-color: var(--ct-border);
+}
+
+.composer-surface-chrome,
+[role="menu"],
+[role="dialog"],
+[data-codexthemes-surface="output"],
+[data-codexthemes-surface="diff"] {
+  color: var(--ct-text);
+  background: var(--ct-surface);
+  border-color: var(--ct-border);
+}
+
+.xterm,
+.xterm-viewport,
+.xterm-screen,
+[data-codexthemes-surface="terminal"] {
+  color: var(--ct-text);
+  background: var(--ct-canvas);
+}
+
+:focus-visible { outline-color: var(--ct-accent); }
+
+@media (max-width: 980px) {
+  [data-codexthemes-decoration="optional"] { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}

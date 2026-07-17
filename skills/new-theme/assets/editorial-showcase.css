@@ -1,0 +1,54 @@
+/* __THEME_ID__: bounded home composition; keep native controls above it. */
+:root[data-codexthemes-theme="__THEME_ID__"] {
+  --ct-canvas: #fffaf6;
+  --ct-surface: rgba(255, 253, 251, 0.92);
+  --ct-text: #3f3033;
+  --ct-muted: #806d72;
+  --ct-accent: #bd4968;
+  --ct-border: #ead3d9;
+  --ct-art: url("./assets/artwork.png");
+}
+
+main.main-surface.dream-home-shell {
+  color: var(--ct-text);
+  background: var(--ct-canvas);
+}
+
+main.main-surface.dream-home-shell::before {
+  content: "";
+  position: absolute;
+  inset: 24px;
+  z-index: 0;
+  border: 1px solid var(--ct-border);
+  border-radius: 24px;
+  background: linear-gradient(90deg, rgba(255,250,246,.92) 0 44%, rgba(255,250,246,.18) 68%), var(--ct-art) 70% 35% / cover no-repeat;
+  pointer-events: none;
+}
+
+main.main-surface.dream-conversation-shell,
+aside.app-shell-left-panel,
+.composer-surface-chrome,
+[role="menu"],
+[role="dialog"],
+[data-codexthemes-surface="output"],
+[data-codexthemes-surface="diff"] {
+  color: var(--ct-text);
+  background: var(--ct-surface);
+  border-color: var(--ct-border);
+}
+
+.xterm,
+.xterm-viewport,
+.xterm-screen,
+[data-codexthemes-surface="terminal"] {
+  color: var(--ct-text);
+  background: var(--ct-canvas);
+}
+
+@media (max-width: 980px) {
+  main.main-surface.dream-home-shell::before { inset: 12px; background-position: 64% 35%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}

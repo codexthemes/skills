@@ -1,0 +1,46 @@
+/* __THEME_ID__: preserve native geometry and components. */
+:root[data-codexthemes-theme="__THEME_ID__"] {
+  --ct-art: url("./assets/artwork.png");
+  --ct-art-position: 50% 50%;
+  --ct-veil: rgba(255, 250, 246, 0.34);
+}
+
+main.main-surface.dream-home-shell {
+  isolation: isolate;
+  background: transparent;
+}
+
+main.main-surface.dream-home-shell::before,
+main.main-surface.dream-conversation-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: var(--ct-art) var(--ct-art-position) / cover no-repeat;
+  pointer-events: none;
+}
+
+main.main-surface.dream-home-shell::after,
+main.main-surface.dream-conversation-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--ct-veil);
+  pointer-events: none;
+}
+
+/* Enable these bounded surfaces only when backgroundScope is workspace. */
+main.main-surface.dream-conversation-shell [data-message-author-role],
+main.main-surface.dream-conversation-shell .composer-surface-chrome {
+  background: color-mix(in srgb, #fffdfb 88%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+@media (max-width: 980px) {
+  :root[data-codexthemes-theme="__THEME_ID__"] { --ct-art-position: 62% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main.main-surface.dream-home-shell::before { transition: none; }
+}

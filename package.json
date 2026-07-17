@@ -1,0 +1,14 @@
+{
+  "name": "@codexthemes/skills",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Official agent skills for creating and validating Codex desktop themes.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "node skills/new-theme/scripts/self-test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
