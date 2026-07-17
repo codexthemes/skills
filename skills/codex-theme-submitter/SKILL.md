@@ -56,7 +56,9 @@ The dry run confirms the package parses as a valid `codex-theme` document (forma
 
 ## Step 4: submit
 
-Submitting publishes the theme on codexthemes.ai immediately — there is no review queue. Confirm with the user before uploading, then run:
+The API is the **only** agent submission path. Never open `codexthemes.ai/submit` in a browser, drive a browser extension, or fill the web upload form — that form's file picker is for humans and fails under automation (Chrome blocks file access for extensions). If `submit-theme.ts` fails or no API key is configured, report that plainly and guide the user through the fix; do not fall back to the website form.
+
+Submitting publishes the theme on codexthemes.ai immediately — there is no review queue. Resubmitting an already-published theme id is the normal update path (bump `manifest.version`, re-export, submit again). Confirm with the user before uploading, then run:
 
 ```bash
 npx tsx scripts/submit-theme.ts /absolute/path/<theme-id>.codex-theme
