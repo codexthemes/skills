@@ -55,7 +55,7 @@ The dry run confirms the package parses as a valid `codex-theme` document (forma
 
 ## Step 4: submit
 
-Submitting publishes the package to codexthemes.ai for review. Confirm with the user before uploading, then run:
+Submitting publishes the theme on codexthemes.ai immediately — there is no review queue. Confirm with the user before uploading, then run:
 
 ```bash
 npx tsx scripts/submit-theme.ts /absolute/path/<theme-id>.codex-theme
@@ -65,12 +65,11 @@ The script sends the package as UTF-8 JSON to `POST https://codexthemes.ai/api/t
 
 ## Step 5: report the result
 
-On success, relay the server response to the user: submission id, review status, and public URL when present, plus the theme id and version that were submitted.
+On success, the theme is live immediately and the response contains its detail page URL (`url`, e.g. `https://codexthemes.ai/themes/<theme-id>`). Always give the user that link, plus the theme id and version that were published. Resubmitting the same theme id updates the published theme in place — bump the manifest version first so the change is visible.
 
 On failure, report the HTTP status and server message plainly, then act on it:
 
 - `401`/`403`: the key is invalid or revoked. Guide the user through Step 2 again with a fresh key from `https://codexthemes.ai/settings/apikeys`.
-- `409`: this theme version was already submitted. Bump the manifest version in the theme source, re-export with codex-theme-creator, and resubmit.
 - Other errors: see `references/submit-api.md`.
 
 Never retry a failed submission in a loop, and never claim a theme was submitted unless the script reported `"status": "submitted"`.

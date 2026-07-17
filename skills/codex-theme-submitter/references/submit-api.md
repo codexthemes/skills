@@ -47,11 +47,11 @@ The body is the portable `.codex-theme` package exactly as exported by codex-the
 
 ## Responses
 
-- `201`: submission accepted into review. The response JSON is passed through to the user: `{ "status": "pending_review", "id", "name", "version", "submissionId", "message" }`. The theme appears in the gallery after approval.
+- `201`: the theme is published immediately — there is no review queue. The response JSON is passed through to the user: `{ "status": "published", "id", "name", "version", "submissionId", "url", "message" }`. `url` is the theme's public detail page (`https://codexthemes.ai/themes/<id>`); always report it. Resubmitting the same theme id updates the published theme in place — bump `manifest.version` first.
 - `429`: submissions are rate limited (one per 30 seconds per account); retry after the `Retry-After` value.
 - `401` / `403`: the API key is missing, invalid, revoked, or lacks permission. Direct the user to `https://codexthemes.ai/settings/apikeys` to create a fresh key.
-- `409`: this theme id and version was already submitted. Bump `manifest.version` in the theme source, re-export, and submit again.
 - `413`: the package exceeds the server size limit.
 - `422`: the server rejected the package contents; the response body explains why.
+- `503`: storage is unavailable on the server; retry later.
 
 Other non-2xx statuses are reported with the first 500 characters of the response body.

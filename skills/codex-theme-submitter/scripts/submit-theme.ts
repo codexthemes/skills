@@ -132,6 +132,11 @@ export async function submitTheme(packagePath: string, dryRun = false): Promise<
     throw new Error(`Submission failed (HTTP ${response.status})${detail ? `: ${detail}` : ''}`);
   }
 
+  const themeUrl =
+    responseJson && typeof responseJson === 'object' && typeof (responseJson as Record<string, unknown>).url === 'string'
+      ? ((responseJson as Record<string, unknown>).url as string)
+      : undefined;
+
   return {
     status: 'submitted',
     packagePath: resolvedPath,
@@ -139,6 +144,7 @@ export async function submitTheme(packagePath: string, dryRun = false): Promise<
     themeVersion: portable.manifest.version,
     endpoint,
     httpStatus: response.status,
+    ...(themeUrl ? { themeUrl } : {}),
     ...(responseJson !== undefined ? { response: responseJson } : {}),
   };
 }
