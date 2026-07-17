@@ -148,13 +148,14 @@ export async function validateTheme(themeDirectory: string): Promise<ValidationR
     errors.push('artwork themes need pointer-events: none on decorative layers');
   }
 
-  const homeScoped = /dream-home|home-shell|data-codexthemes-page=["']home/.test(cleanCss);
-  const conversationScoped = /dream-conversation|conversation-shell|data-codexthemes-page=["']conversation/.test(cleanCss);
+  const homeScoped = /data-codexthemes-page=["']home/.test(cleanCss);
+  const conversationScoped = /data-codexthemes-page=["']conversation/.test(cleanCss);
+  const conversationArtworkGated = /data-codexthemes-background-scope=["']workspace/.test(cleanCss);
   if (manifest.art && !homeScoped) errors.push('artwork is not scoped to a verified home marker');
   if (design.backgroundScope === 'workspace' && !conversationScoped) {
     errors.push('workspace background lacks a verified conversation scope');
   }
-  if (design.backgroundScope === 'home' && conversationScoped) {
+  if (design.backgroundScope === 'home' && conversationScoped && !conversationArtworkGated) {
     warnings.push('home-only theme contains conversation selectors; confirm they do not render artwork');
   }
   if (/main\s*:not\(/.test(cleanCss)) errors.push('do not infer conversation state with main:not(...)');

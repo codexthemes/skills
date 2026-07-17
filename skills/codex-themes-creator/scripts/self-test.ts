@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { scaffoldTheme, type LayoutMode } from './scaffold-theme.ts';
+import { inlineLocalAssets, runtimeSource } from './apply-theme.ts';
 import { validateTheme } from './validate-theme.ts';
 import { validateSkill } from './validate-skill.ts';
 
@@ -40,6 +41,15 @@ try {
     const result = await validateTheme(path.join(tempDir, id));
     assert.equal(result.valid, true, JSON.stringify(result, null, 2));
   }
+
+  const nativeDir = path.join(tempDir, 'test-native-background');
+  const inlined = await inlineLocalAssets(await fs.readFile(path.join(nativeDir, 'theme.css'), 'utf8'), nativeDir);
+  assert.match(inlined, /data:image\/png;base64,/);
+  assert.doesNotMatch(inlined, /dream-home|dream-conversation/i);
+  const runtime = runtimeSource('test-native-background', 'home', inlined);
+  assert.match(runtime, /data-thread-user-message-navigation-item-id/);
+  assert.match(runtime, /data-composer-navigation-target/);
+  assert.match(runtime, /codexthemes-runtime-style/);
 
   const badDir = path.join(tempDir, 'test-native-immersive');
   await fs.appendFile(path.join(badDir, 'theme.css'), '\nmain * { opacity: 1; }\n');

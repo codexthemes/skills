@@ -5,13 +5,13 @@
   --ct-veil: rgba(255, 250, 246, 0.34);
 }
 
-main.main-surface.dream-home-shell {
+main.main-surface[data-codexthemes-page="home"] {
   isolation: isolate;
   background: transparent;
 }
 
-main.main-surface.dream-home-shell::before,
-main.main-surface.dream-conversation-shell::before {
+main.main-surface[data-codexthemes-page="home"]::before,
+:root[data-codexthemes-background-scope="workspace"] main.main-surface[data-codexthemes-page="conversation"]::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -20,8 +20,8 @@ main.main-surface.dream-conversation-shell::before {
   pointer-events: none;
 }
 
-main.main-surface.dream-home-shell::after,
-main.main-surface.dream-conversation-shell::after {
+main.main-surface[data-codexthemes-page="home"]::after,
+:root[data-codexthemes-background-scope="workspace"] main.main-surface[data-codexthemes-page="conversation"]::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -31,8 +31,8 @@ main.main-surface.dream-conversation-shell::after {
 }
 
 /* Enable these bounded surfaces only when backgroundScope is workspace. */
-main.main-surface.dream-conversation-shell [data-message-author-role],
-main.main-surface.dream-conversation-shell .composer-surface-chrome {
+:root[data-codexthemes-background-scope="workspace"] main.main-surface[data-codexthemes-page="conversation"] [data-message-author-role],
+:root[data-codexthemes-background-scope="workspace"] main.main-surface[data-codexthemes-page="conversation"] .composer-surface-chrome {
   background: color-mix(in srgb, #fffdfb 88%, transparent);
   backdrop-filter: blur(14px);
 }
@@ -42,5 +42,5 @@ main.main-surface.dream-conversation-shell .composer-surface-chrome {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  main.main-surface.dream-home-shell::before { transition: none; }
+  main.main-surface[data-codexthemes-page="home"]::before { transition: none; }
 }

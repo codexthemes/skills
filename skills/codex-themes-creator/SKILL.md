@@ -11,6 +11,8 @@ Create a reversible decorative theme without modifying `app.asar`, the signed ap
 
 Use this skill as the sole design and QA authority for a new Codex theme. Do not read, copy, or combine another installed theme skill, finished theme manifest, finished theme CSS, or local theme collection unless the user explicitly names that source. Do not describe the workflow as combining this skill with “local theme conventions.” Start from this skill's matching skeleton and the user's brief or reference image.
 
+This skill is standalone. Its TypeScript scripts own scaffolding, validation, reversible session application, and restore. Never detect, invoke, read configuration from, or claim a dependency on CodeDrobe, Dream/Fiona, or another theme injector unless the user explicitly asks to use that product. Do not reuse their marker names or runtime data. The only required local tools are Node.js, `npx`, and the official Codex desktop app.
+
 ## Read the required references
 
 Before creating or substantially redesigning a theme, read these files completely:
@@ -115,7 +117,27 @@ Generate a self-contained preview at both 1440x900 and a narrow viewport. Label 
 
 ## Gate 6: apply and verify the real app
 
-Ask for explicit permission before changing settings, applying a theme, or restarting Codex. Use an already-installed reversible integration. If none exists, finish the source, preview, and package without patching the official application.
+Ask for explicit permission before applying a theme or restarting Codex. Use this skill's own reversible TypeScript runtime; do not search for or prefer an external theme program.
+
+If Codex is already exposing a local debugging endpoint, apply without restarting:
+
+```bash
+npx tsx scripts/apply-theme.ts apply /absolute/theme-directory
+```
+
+If no endpoint exists, ask specifically for permission to restart Codex, then use the standalone launcher:
+
+```bash
+npx tsx scripts/apply-theme.ts apply /absolute/theme-directory --launch
+```
+
+The launcher binds debugging to `127.0.0.1`, injects only an owned `<style>` element and CodexThemes page markers, does not modify the signed application bundle, and keeps the theme active across SPA route changes and renderer reloads for the current app session. A full application quit requires reapplying the theme. Restore at any time with:
+
+```bash
+npx tsx scripts/apply-theme.ts restore
+```
+
+If standalone application is unavailable on the current platform, finish the source, preview, validation, and package. State the application limitation plainly; never silently fall back to another installed injector.
 
 Verify independently:
 
