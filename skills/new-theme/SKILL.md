@@ -7,6 +7,10 @@ description: Create, redesign, validate, preview, package, and prepare cohesive 
 
 Create a reversible decorative theme without modifying `app.asar`, the signed app bundle, WindowsApps, user tasks, or authentication data. Preserve native layout and interaction behavior unless the chosen layout mode explicitly permits a bounded composition change.
 
+## Authority boundary
+
+Use this skill as the sole design and QA authority for a new Codex theme. Do not read, copy, or combine another installed theme skill, finished theme manifest, finished theme CSS, or local theme collection unless the user explicitly names that source. Do not describe the workflow as combining this skill with “local theme conventions.” Start from this skill's matching skeleton and the user's brief or reference image.
+
 ## Read the required references
 
 Before creating or substantially redesigning a theme, read these files completely:
