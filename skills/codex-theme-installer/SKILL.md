@@ -23,6 +23,8 @@ Downloads work without any API key inside a free anonymous quota, so do not dema
 
 The script validates the downloaded package (format, schema version, matching theme id, safe relative filenames, ≤30 MB) before writing anything, then unpacks `theme.json`, the stylesheet, the artwork, and the readme into `~/.codexthemes/themes/<theme-id>/`. It refuses to overwrite an existing non-empty theme directory; pass `--force` only after the user confirms replacing their local copy — the directory may hold their own edits.
 
+**Updating an installed theme**: published themes are updated in place on codexthemes.ai, so when the user asks to update, upgrade, or re-download a theme they already installed, re-run the install with `--force` — the update request itself is the confirmation, unless the local copy holds edits the user made (then warn first). After the files land, continue into Step 4 so the running app actually switches to the new version; a hot swap of the same theme id re-injects the updated CSS.
+
 ## Step 3: handle quota and rate limits
 
 On HTTP `429` or `402` the free quota is exhausted; the script's error message includes any `Retry-After` value. Do not retry in a loop. Tell the user the free download quota is used up and guide them to configure a personal API key:

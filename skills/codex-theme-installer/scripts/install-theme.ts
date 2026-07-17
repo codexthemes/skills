@@ -69,9 +69,9 @@ export function validatePackage(portable: unknown, expectedId: string): string[]
   } else {
     if (manifest.id !== expectedId) errors.push(`manifest.id must be "${expectedId}"`);
     if (typeof manifest.version !== 'string' || !manifest.version.trim()) errors.push('manifest.version must be a non-empty string');
-    if (typeof manifest.css !== 'string' || !isSafeRelativeFile(manifest.css)) errors.push('manifest.css must be a plain relative filename');
-    if (manifest.art !== undefined && (typeof manifest.art !== 'string' || !isSafeRelativeFile(manifest.art))) {
-      errors.push('manifest.art must be a plain relative filename when present');
+    if (typeof manifest.css !== 'string' || !isSafeRelativePath(manifest.css)) errors.push('manifest.css must be a safe relative path');
+    if (manifest.art !== undefined && (typeof manifest.art !== 'string' || !isSafeRelativePath(manifest.art))) {
+      errors.push('manifest.art must be a safe relative path when present');
     }
   }
   if (typeof record.css !== 'string' || !record.css.trim()) errors.push('css must be a non-empty string');
@@ -79,7 +79,7 @@ export function validatePackage(portable: unknown, expectedId: string): string[]
   if (art !== undefined) {
     if (typeof art !== 'object' || art === null) {
       errors.push('art must be an object when present');
-    } else if (typeof art.filename !== 'string' || !isSafeRelativeFile(art.filename)
+    } else if (typeof art.filename !== 'string' || !isSafeRelativePath(art.filename)
       || typeof art.mimeType !== 'string' || typeof art.base64 !== 'string') {
       errors.push('art must include a safe relative filename plus mimeType and base64 strings');
     }
@@ -87,10 +87,16 @@ export function validatePackage(portable: unknown, expectedId: string): string[]
   return errors;
 }
 
-function isSafeRelativeFile(candidate: string): boolean {
-  if (!candidate || candidate.length > 128) return false;
-  if (candidate.includes('/') || candidate.includes('\\') || candidate.includes('..')) return false;
-  return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(candidate);
+/**
+ * Allow subdirectories (creator manifests use paths like "assets/artwork.png",
+ * and the CSS references them relatively) while still rejecting traversal,
+ * absolute paths, and Windows separators.
+ */
+function isSafeRelativePath(candidate: string): boolean {
+  if (!candidate || candidate.length > 200) return false;
+  if (candidate.includes('\\') || candidate.startsWith('/')) return false;
+  const segments = candidate.split('/');
+  return segments.every((segment) => /^[A-Za-z0-9][A-Za-z0-9._ -]*$/.test(segment) && !segment.includes('..'));
 }
 
 export async function installPackage(portable: PortablePackage, force: boolean, root = themesRoot()): Promise<Record<string, unknown>> {
@@ -107,23 +113,28 @@ export async function installPackage(portable: PortablePackage, force: boolean, 
 
   await fs.mkdir(themeDir, { recursive: true });
   const written: string[] = [];
+  const writeThemeFile = async (relative: string, data: string | Buffer): Promise<void> => {
+    const target = path.resolve(themeDir, relative);
+    if (!target.startsWith(`${themeDir}${path.sep}`)) throw new Error(`Path escapes the theme directory: ${relative}`);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, data);
+    written.push(relative);
+  };
 
   const manifest = { ...portable.manifest };
   if (portable.art && !manifest.art) manifest.art = portable.art.filename;
-  await fs.writeFile(path.join(themeDir, 'theme.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-  written.push('theme.json');
+  await writeThemeFile('theme.json', `${JSON.stringify(manifest, null, 2)}\n`);
 
-  await fs.writeFile(path.join(themeDir, manifest.css), portable.css, 'utf8');
-  written.push(manifest.css);
+  // Preserve the manifest's relative layout (e.g. assets/artwork.png): the
+  // CSS references these files by relative url(), so flattening breaks them.
+  await writeThemeFile(manifest.css, portable.css);
 
   if (portable.art) {
-    await fs.writeFile(path.join(themeDir, portable.art.filename), Buffer.from(portable.art.base64, 'base64'));
-    written.push(portable.art.filename);
+    await writeThemeFile(manifest.art ?? portable.art.filename, Buffer.from(portable.art.base64, 'base64'));
   }
 
   if (typeof portable.readme === 'string' && portable.readme.trim()) {
-    await fs.writeFile(path.join(themeDir, 'README.md'), portable.readme, 'utf8');
-    written.push('README.md');
+    await writeThemeFile('README.md', portable.readme);
   }
 
   return {

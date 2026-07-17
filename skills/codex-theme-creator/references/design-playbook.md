@@ -69,6 +69,16 @@ For light themes, do not leave settings, menus, dropdowns, output panels, change
 
 For dark themes, avoid pure black across every surface. Use distinguishable elevations and readable muted text.
 
+### Native token sweep (required for immersive, showcase, and palette modes)
+
+Codex resolves most component colors from its own `--color-token-*` CSS variables, and those variables follow the **user's** native light/dark appearance — not yours. A theme that recolors surfaces but leaves native tokens untouched only looks right on machines whose native mode happens to match the theme, and breaks on everyone else's (dark text on a dark canvas, stray white bands). Do not invent lookalike token names (`--background`, `--card`, shadcn-style HSL triples); they change nothing.
+
+Inside the theme root selector, set `color-scheme` to the theme's mode and override the full native token set with `!important`, mapping every token to the semantic palette. The canonical set:
+
+`bg-primary`, `bg-secondary`, `bg-tertiary`, `main-surface-primary`, `side-bar-background`, `foreground`, `text-primary`, `text-secondary`, `text-tertiary`, `description-foreground`, `icon-foreground`, `input-background`, `input-foreground`, `input-placeholder-foreground`, `input-border`, `border`, `border-default`, `border-heavy`, `border-light`, `list-hover-background`, `list-active-selection-background`, `list-active-selection-foreground`, `toolbar-hover-background`, `button-background`, `button-foreground`, `button-border`, `link`, `text-link-foreground`, `text-link-active-foreground`, `primary`, `focus-border`, `dropdown-background`, `dropdown-foreground`, `menu-background`, `menu-border`, `checkbox-background`, `checkbox-border`, `checkbox-foreground`, `badge-background`, `badge-foreground`, `scrollbar-slider-background`, `scrollbar-slider-hover-background`, `scrollbar-slider-active-background`, `conversation-header`, `conversation-body`, `conversation-summary-leading`, `conversation-summary-trailing`, `non-assistant-body-descendant`, `text-preformat-foreground`, `text-preformat-background`, `text-code-block-background`
+
+(each prefixed `--color-token-`). Verify against the live DOM and add any token the current app version defines that this list misses. The finished theme must render identically whether the user's Codex starts in native light or native dark mode.
+
 ## 4. Page and surface scope
 
 Theme and test these surfaces independently:
@@ -83,6 +93,7 @@ Theme and test these surfaces independently:
 | Menus | profile menu, dropdown, context menu, tooltip, disabled item |
 | Output/diff | file cards, changed-files list, additions, deletions, review controls |
 | Terminal | tab strip, host, xterm viewport, xterm screen, selection and cursor |
+| System pages | plugins/apps directory, sites, scheduled tasks: headings, descriptions, search inputs, cards — no native-mode surfaces or fades left behind |
 
 Scope home selectors to a verified home marker. Scope task artwork to a verified conversation marker. Never use `main:not(...)`, page text, or absence of the home marker as proof that a page is a conversation. Settings and system pages require their own scope.
 

@@ -185,6 +185,7 @@ Verify independently:
 - structure: native sidebar, cards, project selector, composer, task content, settings, and terminal work
 - scope: home and conversation artwork appears only where contracted
 - palette: every changed surface belongs to one semantic system
+- mode independence: the full native `--color-token-*` sweep is present, so the theme renders identically whether the user's Codex starts in native light or native dark mode (see the playbook's native token sweep)
 - state: idle, hover, selected, disabled, focus-visible, loading, running, expanded, and open
 - geometry: no clipping, overflow, duplicate borders, text/icon overlap, or sidebar action collision
 - lifecycle: cold launch, route change, renderer reload, theme switch, restore, and reapply

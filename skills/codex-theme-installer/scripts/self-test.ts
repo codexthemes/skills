@@ -43,8 +43,14 @@ try {
   assert.equal(downloadEndpoint('noir-anime'), 'https://codexthemes.ai/api/themes/noir-anime/download');
 
   assert.deepEqual(validatePackage(validPackage, 'noir-anime'), []);
+  assert.deepEqual(
+    validatePackage({ ...validPackage, manifest: { ...validPackage.manifest, art: 'assets/doraemon-pocket-room.webp' } }, 'noir-anime'),
+    [],
+  );
   assert.match(validatePackage({ ...validPackage, manifest: { ...validPackage.manifest, id: 'other' } }, 'noir-anime').join('\n'), /manifest\.id/);
-  assert.match(validatePackage({ ...validPackage, manifest: { ...validPackage.manifest, css: '../evil.css' } }, 'noir-anime').join('\n'), /relative filename/);
+  assert.match(validatePackage({ ...validPackage, manifest: { ...validPackage.manifest, css: '../evil.css' } }, 'noir-anime').join('\n'), /relative path/);
+  assert.match(validatePackage({ ...validPackage, manifest: { ...validPackage.manifest, art: 'assets/../../evil.png' } }, 'noir-anime').join('\n'), /relative path/);
+  assert.match(validatePackage({ ...validPackage, manifest: { ...validPackage.manifest, art: '/etc/evil.png' } }, 'noir-anime').join('\n'), /relative path/);
   assert.match(
     validatePackage({ ...validPackage, art: { ...validPackage.art, filename: '../../evil.png' } }, 'noir-anime').join('\n'),
     /art/,
@@ -64,6 +70,17 @@ try {
   await assert.rejects(installTheme('noir-anime', false, stub(validPackage)), /already installed.*--force/s);
   const overwritten = await installTheme('noir-anime', true, stub(validPackage));
   assert.equal(overwritten.overwrote, true);
+
+  const nestedPackage = {
+    ...validPackage,
+    manifest: { ...validPackage.manifest, id: 'doraemon-pocket', art: 'assets/doraemon-pocket-room.webp' },
+    art: { filename: 'doraemon-pocket-room.webp', mimeType: 'image/webp', base64: Buffer.from('52494646', 'hex').toString('base64') },
+  };
+  const nested = await installTheme('doraemon-pocket', false, stub(nestedPackage));
+  assert.deepEqual(nested.files, ['theme.json', 'theme.css', 'assets/doraemon-pocket-room.webp', 'README.md']);
+  await fs.access(path.join(themesRoot(), 'doraemon-pocket', 'assets', 'doraemon-pocket-room.webp'));
+  const nestedManifest = JSON.parse(await fs.readFile(path.join(themesRoot(), 'doraemon-pocket', 'theme.json'), 'utf8')) as { art?: string };
+  assert.equal(nestedManifest.art, 'assets/doraemon-pocket-room.webp');
 
   await saveApiKey('cx-inst-1234567890');
   const authed = await installTheme('noir-anime', true, stub(validPackage));

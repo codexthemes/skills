@@ -17,6 +17,63 @@
   /* Typography pairing: display stack for headings/brand moments, body stack for prose. */
   --ct-font-display: "Iowan Old Style", "Songti SC", serif;
   --ct-font-body: "Avenir Next", "PingFang SC", sans-serif;
+
+  /* Native token sweep (required): Codex components resolve colors from the app's
+     own --color-token-* variables, which follow the USER's native light/dark mode.
+     Override the full set so the theme renders identically on every machine.
+     Tune each value to the semantic palette; never delete entries. */
+  color-scheme: light;
+  --color-token-bg-primary: var(--ct-canvas) !important;
+  --color-token-bg-secondary: var(--ct-surface) !important;
+  --color-token-bg-tertiary: var(--ct-raised) !important;
+  --color-token-main-surface-primary: var(--ct-canvas) !important;
+  --color-token-side-bar-background: var(--ct-surface) !important;
+  --color-token-foreground: var(--ct-text) !important;
+  --color-token-text-primary: var(--ct-text) !important;
+  --color-token-text-secondary: var(--ct-muted) !important;
+  --color-token-text-tertiary: var(--ct-muted) !important;
+  --color-token-description-foreground: var(--ct-muted) !important;
+  --color-token-icon-foreground: var(--ct-muted) !important;
+  --color-token-input-background: var(--ct-raised) !important;
+  --color-token-input-foreground: var(--ct-text) !important;
+  --color-token-input-placeholder-foreground: var(--ct-muted) !important;
+  --color-token-input-border: var(--ct-border) !important;
+  --color-token-border: var(--ct-border) !important;
+  --color-token-border-default: var(--ct-border) !important;
+  --color-token-border-heavy: var(--ct-border) !important;
+  --color-token-border-light: var(--ct-border) !important;
+  --color-token-list-hover-background: var(--ct-accent-soft) !important;
+  --color-token-list-active-selection-background: var(--ct-accent-soft) !important;
+  --color-token-list-active-selection-foreground: var(--ct-text) !important;
+  --color-token-toolbar-hover-background: var(--ct-accent-soft) !important;
+  --color-token-button-background: var(--ct-accent) !important;
+  --color-token-button-foreground: var(--ct-raised) !important;
+  --color-token-button-border: var(--ct-border) !important;
+  --color-token-link: var(--ct-accent) !important;
+  --color-token-text-link-foreground: var(--ct-accent) !important;
+  --color-token-text-link-active-foreground: var(--ct-accent) !important;
+  --color-token-primary: var(--ct-accent) !important;
+  --color-token-focus-border: var(--ct-focus) !important;
+  --color-token-dropdown-background: var(--ct-raised) !important;
+  --color-token-dropdown-foreground: var(--ct-text) !important;
+  --color-token-menu-background: var(--ct-raised) !important;
+  --color-token-menu-border: var(--ct-border) !important;
+  --color-token-checkbox-background: var(--ct-raised) !important;
+  --color-token-checkbox-border: var(--ct-border) !important;
+  --color-token-checkbox-foreground: var(--ct-accent) !important;
+  --color-token-badge-background: var(--ct-accent-soft) !important;
+  --color-token-badge-foreground: var(--ct-text) !important;
+  --color-token-scrollbar-slider-background: var(--ct-accent-soft) !important;
+  --color-token-scrollbar-slider-hover-background: var(--ct-accent-soft) !important;
+  --color-token-scrollbar-slider-active-background: var(--ct-accent-soft) !important;
+  --color-token-conversation-header: var(--ct-muted) !important;
+  --color-token-conversation-body: var(--ct-text) !important;
+  --color-token-conversation-summary-leading: var(--ct-muted) !important;
+  --color-token-conversation-summary-trailing: var(--ct-muted) !important;
+  --color-token-non-assistant-body-descendant: var(--ct-muted) !important;
+  --color-token-text-preformat-foreground: var(--ct-text) !important;
+  --color-token-text-preformat-background: var(--ct-surface) !important;
+  --color-token-text-code-block-background: var(--ct-raised) !important;
 }
 
 /* Layered canvas: gradient + artwork or texture, never one flat color. */

@@ -19,6 +19,7 @@ Reject and revise when any item occurs:
 - native layout changes outside the selected layout mode
 - artwork leaks from home or conversation scope into settings/system pages
 - light theme contains accidental dark settings, menu, diff, output, or terminal surfaces
+- theme readability depends on the user's native appearance: the native `--color-token-*` sweep is missing or partial, so the theme renders correctly only when the machine's native light/dark mode matches the theme's mode
 - text, placeholder, icon, focus ring, code, diff, or menu contrast is unreadable
 - `scripts/qa-contrast.ts` reports any failure (text below 2.5:1 on a verified opaque backdrop) — run it immediately after every apply
 - broad opacity rules expose hidden sidebar actions
@@ -45,7 +46,9 @@ Verify at least:
 - menus: personal menu, general dropdown, tooltip, disabled item
 - conversation: prose, tool call, attachment, file card, changed-files card, output panel
 - settings: navigation, section card, toggle, select, dialog
+- system pages: plugins/apps directory, sites, scheduled — headings, search input, cards readable with no native-mode surfaces left behind
 - terminal: before mount, after xterm mount, cursor, selection
+- mode independence: switch Codex's native appearance to the opposite of the theme's mode (or clear the injected style and compare) and re-verify home, one system page, and one menu — the theme must render identically from a native-light and a native-dark start
 
 ## Geometry checks
 
