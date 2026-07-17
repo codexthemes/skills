@@ -5,7 +5,7 @@ description: Download a published Codex theme from codexthemes.ai and install it
 
 # Install a Codex theme from CodexThemes
 
-Download a published theme's portable package from codexthemes.ai and unpack its source files into `~/.codexthemes/themes/<theme-id>/`. This skill is standalone: its TypeScript scripts own the download, validation, and local installation. It does not search the gallery (codex-theme-finder), create or apply themes (codex-theme-creator), or submit them (codex-theme-submitter). The only required local tools are Node.js 20+ and `npx`.
+Download a published theme's portable package from codexthemes.ai and unpack its source files into `~/.codexthemes/themes/<theme-id>/`. This skill is standalone: its TypeScript scripts own the download, validation, and local installation. It does not search the gallery (codex-theme-finder), create themes (codex-theme-creator), or submit them (codex-theme-submitter). Applying belongs to codex-theme-switcher — but a successful install chains directly into it (Step 4); installing files and stopping is not a finished job. The only required local tools are Node.js 20+ and `npx`.
 
 Read `references/download-api.md` before diagnosing an unexpected API response or changing endpoint behavior. Run all commands from the installed skill directory.
 
@@ -35,6 +35,11 @@ Check the current key state with `npx tsx scripts/apikey.ts status`; remove a st
 
 On `401`/`403` the configured key is invalid or revoked — guide the user to create a fresh key the same way. On `404` the theme id does not exist; re-check the id with codex-theme-finder.
 
-## Step 4: report and hand off
+## Step 4: activate, or hand the user the exact next reply
 
-Report the installed path (`~/.codexthemes/themes/<theme-id>/`), the theme version, and the files written. Installation places source files only — it does not change the running Codex app. To activate the theme, hand off to codex-theme-switcher (`switch-theme.ts apply <theme-id>`), which hot-swaps when Codex already exposes its debugging endpoint, asks the user before any restart, and verifies the result with `switch-theme.ts status`. Never claim a theme is active in Codex just because the files were installed or a restart was scheduled.
+An install request means the user wants to see the theme in Codex, not merely store its files. Report the installed path (`~/.codexthemes/themes/<theme-id>/`), the theme version, and the files written — then continue directly into activation with codex-theme-switcher. If codex-theme-switcher is not installed, bootstrap it the same way this skill was bootstrapped (`npx skills add codexthemes/skills --skill codex-theme-switcher -g -a codex`).
+
+- If Codex already exposes its debugging endpoint, hot-swap now with the switcher's `switch-theme.ts apply <theme-id>` and verify with `switch-theme.ts status` — a hot swap is reversible and needs no confirmation beyond the install request itself.
+- If activation requires restarting Codex, do not restart silently and do not stop at "installed". End by telling the user the exact reply that continues, for example: "Reply `apply` and I will restart Codex to activate `<theme-id>`." When they reply, follow the switcher's `--launch` flow.
+
+Never end the conversation with only "files installed, not applied" and no actionable next step, and never claim the theme is active until the switcher's `status` reports `active`.
