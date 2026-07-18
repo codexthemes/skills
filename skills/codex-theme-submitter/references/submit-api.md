@@ -68,7 +68,7 @@ The body is the portable `.codex-theme` package exactly as exported by codex-the
 
 ## Responses
 
-- `201`: the theme is published immediately — there is no review queue. The response JSON is passed through to the user: `{ "status": "published", "id", "name", "version", "submissionId", "url", "message" }`. `url` is the theme's public detail page (`https://codexthemes.ai/themes/<id>`); always report it. Resubmitting the same theme id updates the published theme in place — bump `manifest.version` first.
+- `201`: the theme is published immediately — there is no review queue. The response JSON is passed through to the user: `{ "status": "published", "id", "name", "version", "submissionId", "url", "message" }`. `url` is the theme's public detail page (`https://codexthemes.ai/themes/<id>`); always report it. Resubmitting your own theme id (same API key) updates the published theme in place — bump `manifest.version` first. A slug already held by another submitter or a builtin item is not overwritten: the server publishes under the slug plus a random suffix (for example `<slug>-3f9a`), and the response `id`/`url` reflect that final slug — never assume the requested slug survived.
 - `429`: submissions are rate limited (one per 30 seconds per account); retry after the `Retry-After` value.
 - `401` / `403`: the API key is missing, invalid, revoked, or lacks permission. Direct the user to `https://codexthemes.ai/settings/apikeys` to create a fresh key.
 - `413`: the package exceeds the server size limit.

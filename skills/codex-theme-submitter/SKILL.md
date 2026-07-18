@@ -74,7 +74,7 @@ The script sends the package as UTF-8 JSON to `POST https://codexthemes.ai/api/t
 
 ## Step 5: report the result
 
-On success, the theme is live immediately and the response contains its detail page URL (`url`, e.g. `https://codexthemes.ai/themes/<theme-id>`). Always give the user that link, plus the theme id and version that were published. Resubmitting the same theme id updates the published theme in place — bump the manifest version first so the change is visible.
+On success, the theme is live immediately and the response contains its detail page URL (`url`, e.g. `https://codexthemes.ai/themes/<theme-id>`). Always give the user that link, plus the published id and version **from the response** — when the requested slug already belongs to another submitter or a builtin item, the server publishes under the slug plus a random suffix instead of overwriting it, so the final id/url may differ from what was sent. Resubmitting your own theme id with the same API key updates the published theme in place — bump the manifest version first so the change is visible.
 
 On failure, report the HTTP status and server message plainly, then act on it:
 
@@ -102,6 +102,6 @@ npx tsx scripts/submit-skin.ts \
   [--author "<author>"] [--description "<one-line description>"] [--mode light|dark|mixed] [--dry-run]
 ```
 
-6. **Report**: on success the response contains the public listing URL (`https://codexthemes.ai/skins/<slug>`) — always give the user that link. Resubmitting the same slug updates the published entry in place.
+6. **Report**: on success the response contains the public listing URL (`https://codexthemes.ai/skins/<slug>`) — always give the user that link, taken from the response: if the slug already belongs to another submitter, the server publishes under a random-suffixed slug instead of overwriting. Resubmitting your own slug with the same API key updates the published entry in place.
 
 If the page has no usable workspace preview image, stop and ask the user to provide one instead of substituting artwork or generating a mockup.
