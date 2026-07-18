@@ -187,6 +187,10 @@ npx tsx scripts/qa-contrast.ts
 
 It hard-fails (exit 1) when visible text is unreadable, using two independent measurements: computed-style composition over verified opaque backdrops, and **real screenshot pixels** (`pixelFailures`), which also judge text sitting over artwork and transparent layers. A `fail` means the theme is unreadable right now: fix the text tokens or artwork veils (or switch back to the previous theme) before doing anything else, and never leave a failing theme active or report it as applied. A `pass` is necessary but not sufficient; continue with the full matrix:
 
+`qa-contrast.ts` is deliberately route-local: it samples only what is mounted and visible when it runs. A pass on home says nothing about settings or a terminal that has not mounted yet. For component-changing themes, navigate and rerun it on home, one conversation with representative content, settings with cards/selects visible, and the terminal after xterm mounts. Record each route separately; never reuse one route's pass as evidence for the matrix.
+
+When a root token appears correct but a component still uses the native palette, inspect the component root's inline `style` and locally declared custom properties. Current Codex builds create local token islands for settings controls and terminals; a declaration on the component itself beats an inherited root token. Fix the verified component root (for example `[data-codex-terminal="true"]`) and any inline-colored viewport with a narrowly scoped `!important`, then retest both an existing mounted instance and a newly mounted one.
+
 Verify independently:
 
 - structure: native sidebar, cards, project selector, composer, task content, settings, and terminal work

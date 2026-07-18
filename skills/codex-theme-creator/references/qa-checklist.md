@@ -20,6 +20,7 @@ Reject and revise when any item occurs:
 - artwork leaks from home or conversation scope into settings/system pages
 - light theme contains accidental dark settings, menu, diff, output, or terminal surfaces
 - theme readability depends on the user's native appearance: the native `--color-token-*` sweep is missing or partial, so the theme renders correctly only when the machine's native light/dark mode matches the theme's mode
+- settings, panels, or terminal hosts retain locally declared native-light semantic variables because only inherited root tokens were changed
 - text, placeholder, icon, focus ring, code, diff, or menu contrast is unreadable
 - `scripts/qa-contrast.ts` reports any failure (text below 2.5:1 on a verified opaque backdrop) — run it immediately after every apply
 - broad opacity rules expose hidden sidebar actions
@@ -27,7 +28,7 @@ Reject and revise when any item occurs:
 - header gradient makes later controls or side-task text unreadable
 - duplicate borders create double vertical or horizontal lines
 - suggestion cards, project selector, composer, or task content is clipped
-- terminal tab strip and xterm body use unrelated theme systems
+- terminal tab strip, `[data-codex-terminal]` host, xterm viewport, and xterm screen use unrelated theme systems or expose the host through padding/gutters
 - decoration intercepts pointer or keyboard input
 - cold launch visibly flashes into a different geometry
 - theme works only on home while the contract requires immersive/workspace coverage
@@ -48,6 +49,7 @@ Verify at least:
 - settings: navigation, section card, toggle, select, dialog
 - system pages: plugins/apps directory, sites, scheduled — headings, search input, cards readable with no native-mode surfaces left behind
 - terminal: before mount, after xterm mount, cursor, selection
+- route-local contrast: rerun `qa-contrast.ts` on home, conversation, settings, and mounted terminal; one page's pass cannot stand in for another
 - mode independence: switch Codex's native appearance to the opposite of the theme's mode (or clear the injected style and compare) and re-verify home, one system page, and one menu — the theme must render identically from a native-light and a native-dark start
 
 ## Geometry checks
@@ -65,6 +67,8 @@ Inspect computed styles rather than trusting the screenshot alone.
 ## Palette checks
 
 For every changed surface, record background, foreground, border, and focus color. Verify text and icon tokens separately; pale icons often remain unreadable after prose is fixed.
+
+When a visible color disagrees with the root token value, record the owning element's inline style and locally declared custom properties. Check `--color-background-*`, `--color-text-*`, `--color-icon-*`, `--color-border*`, and `--vscode-terminal-*` before adding a component selector. Prefer the smallest verified root that owns the stale values.
 
 For light themes, explicitly inspect settings canvas, settings sidebar, menus, dialogs, output panels, changed-files cards, code blocks, terminal tab strip, terminal host, and xterm viewport.
 

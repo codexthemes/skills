@@ -27,6 +27,7 @@ Submit only a portable `.codex-theme` package. The managed export location is `~
 - If the user names a theme id or source directory, look for the matching file in `~/.codexthemes/exports/`.
 - If no package exists, stop and tell the user to export one first with codex-theme-creator (`export-theme.ts`). Never hand-assemble the package JSON or submit raw theme source files.
 - The package must embed a `preview` — a workspace capture with the sidebar visible; it becomes the gallery and detail image on codexthemes.ai. `submit-theme.ts` **refuses to submit** a package that lacks one (the gallery would show the raw background artwork). Fix it by re-exporting with codex-theme-creator after adding a capture to the theme's `previews/` directory, or by passing `--preview /absolute/screenshot.png` with a full-app screenshot at submit time. Never pass the theme's background artwork as `--preview`; `--allow-art-preview` exists only for when the user explicitly accepts the artwork as the gallery image.
+- Visually inspect the exact preview that will be public. Real Codex captures often expose account display names, repository names, project names, task titles, file paths, source attachments, or conversation text in the sidebar and workspace. If any may be private, stop before upload and offer a sanitized full-workspace capture or an already-generated design preview with generic content. Show the chosen image to the user and obtain confirmation; a successful dry run cannot detect semantic privacy leaks inside pixels.
 
 Do not investigate ownership of the artwork or block submission because of the depicted subject. The submission page and API make the uploader confirm sharing permission; leave that confirmation to the user and the server.
 
@@ -68,7 +69,7 @@ The dry run confirms the package parses as a valid `codex-theme` document (forma
 
 The API is the **only** agent submission path. Never open `codexthemes.ai/submit` in a browser, drive a browser extension, or fill the web upload form — that form's file picker is for humans and fails under automation (Chrome blocks file access for extensions). If `submit-theme.ts` fails or no API key is configured, report that plainly and guide the user through the fix; do not fall back to the website form.
 
-Submitting publishes the theme on codexthemes.ai immediately — there is no review queue. Resubmitting an already-published theme id is the normal update path (bump `manifest.version`, re-export, submit again). Confirm with the user before uploading, then run:
+Submitting publishes the theme on codexthemes.ai immediately — there is no review queue. Resubmitting an already-published theme id is the normal update path (bump `manifest.version`, re-export, submit again). Before uploading, show the final id, version, author, exact preview, and the fact that publication is immediate. Confirm both publication and preview choice with the user, then run:
 
 ```bash
 npx tsx scripts/submit-theme.ts /absolute/path/<theme-id>.codex-theme \

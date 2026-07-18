@@ -79,6 +79,10 @@ Inside the theme root selector, set `color-scheme` to the theme's mode and overr
 
 (each prefixed `--color-token-`). Verify against the live DOM and add any token the current app version defines that this list misses. The finished theme must render identically whether the user's Codex starts in native light or native dark mode.
 
+Current builds also consume a lower-level semantic bridge directly, especially in settings, panels, and dynamically mounted content. Component-changing themes must map at least `--color-background-surface`, `--color-background-surface-under`, `--color-background-panel`, `--color-background-control`, `--color-background-control-opaque`, `--color-background-editor-opaque`, both elevated background levels, `--color-text-foreground` plus secondary/tertiary, `--color-icon-primary` plus secondary/tertiary, and `--color-border` plus light/heavy/focus. Treat these as peers of the canonical token sweep, not optional VS Code compatibility aliases.
+
+Custom properties inherit only when the child does not declare its own value. Settings and terminal roots may carry a complete native-light variable set in an inline `style`; inherited root declarations cannot win against that local island, even when the inherited declaration was important. Inspect the owning root and redeclare the relevant bridge and VS Code variables there. The terminal contract should include `[data-codex-terminal="true"]`, `.xterm`, `.xterm-viewport`, and `.xterm-screen`; the viewport can have an inline background and therefore needs a narrowly scoped important background rule. Verify ANSI foregrounds on a terminal that existed before the live theme switch as well as one mounted afterward.
+
 ## 4. Page and surface scope
 
 Theme and test these surfaces independently:

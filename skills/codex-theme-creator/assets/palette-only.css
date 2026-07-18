@@ -7,6 +7,29 @@
   --ct-muted: #806d72;
   --ct-accent: #bd4968;
   --ct-border: #ead3d9;
+  color-scheme: light;
+  --color-background-surface: var(--ct-canvas) !important;
+  --color-background-surface-under: var(--ct-surface) !important;
+  --color-background-panel: var(--ct-surface) !important;
+  --color-background-control: var(--ct-raised) !important;
+  --color-background-control-opaque: var(--ct-raised) !important;
+  --color-background-editor-opaque: var(--ct-canvas) !important;
+  --color-text-foreground: var(--ct-text) !important;
+  --color-text-foreground-secondary: var(--ct-muted) !important;
+  --color-text-foreground-tertiary: var(--ct-muted) !important;
+  --color-icon-primary: var(--ct-text) !important;
+  --color-icon-secondary: var(--ct-muted) !important;
+  --color-icon-tertiary: var(--ct-muted) !important;
+  --color-border: var(--ct-border) !important;
+  --color-border-light: var(--ct-border) !important;
+  --color-border-heavy: var(--ct-border) !important;
+  --color-border-focus: var(--ct-accent) !important;
+  --color-token-bg-primary: var(--ct-canvas) !important;
+  --color-token-foreground: var(--ct-text) !important;
+  --color-token-input-background: var(--ct-raised) !important;
+  --color-token-menu-background: var(--ct-raised) !important;
+  --color-token-conversation-body: var(--ct-text) !important;
+  --color-token-text-code-block-background: var(--ct-raised) !important;
 }
 
 main.main-surface,
@@ -26,12 +49,21 @@ aside.app-shell-left-panel {
   border-color: var(--ct-border);
 }
 
+[data-codex-terminal="true"] {
+  --vscode-terminal-background: var(--ct-canvas) !important;
+  --vscode-terminal-foreground: var(--ct-text) !important;
+  --color-background-panel: var(--ct-canvas) !important;
+  --color-background-editor-opaque: var(--ct-canvas) !important;
+  color: var(--ct-text) !important;
+  background: var(--ct-canvas) !important;
+}
+
 .xterm,
 .xterm-viewport,
 .xterm-screen,
 [data-codexthemes-surface="terminal"] {
-  color: var(--ct-text);
-  background: var(--ct-canvas);
+  color: var(--ct-text) !important;
+  background: var(--ct-canvas) !important;
 }
 
 :focus-visible { outline-color: var(--ct-accent); }

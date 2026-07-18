@@ -65,6 +65,21 @@ try {
   assert.equal((portable.manifest as Record<string, unknown>).id, 'test-native-background');
 
   const badDir = path.join(tempDir, 'test-native-immersive');
+  const paletteDir = path.join(tempDir, 'test-palette-only');
+  const paletteCssPath = path.join(paletteDir, 'theme.css');
+  const paletteCss = await fs.readFile(paletteCssPath, 'utf8');
+  await fs.writeFile(paletteCssPath, paletteCss.replaceAll('--color-background-panel', '--missing-background-panel'));
+  const missingBridge = await validateTheme(paletteDir);
+  assert.equal(missingBridge.valid, false);
+  assert.match(missingBridge.errors.join('\n'), /native compatibility signals.*color-background-panel/);
+  await fs.writeFile(paletteCssPath, paletteCss);
+
+  await fs.writeFile(paletteCssPath, paletteCss.replace('[data-codex-terminal="true"]', '[data-unverified-terminal="true"]'));
+  const missingTerminalRoot = await validateTheme(paletteDir);
+  assert.equal(missingTerminalRoot.valid, false);
+  assert.match(missingTerminalRoot.errors.join('\n'), /verified \[data-codex-terminal\] root/);
+  await fs.writeFile(paletteCssPath, paletteCss);
+
   await fs.appendFile(path.join(badDir, 'theme.css'), '\nmain * { opacity: 1; }\n');
   const bad = await validateTheme(badDir);
   assert.equal(bad.valid, false);

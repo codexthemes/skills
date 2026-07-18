@@ -46,6 +46,8 @@ The body is the portable `.codex-theme` package exactly as exported by codex-the
 
 `art` and `verification` are optional. `preview` must be a raster capture of the themed workspace (sidebar + home); the server uses it as the gallery and detail image and falls back to `art` only when no preview is embedded — a package without a workspace preview lists with the raw artwork, which looks wrong on the site. For that reason the client **refuses to submit** a package without a `preview` unless `--allow-art-preview` is passed; `--preview /absolute/screenshot.png` injects or replaces the embedded preview at submit time. The client also validates `format`, `schemaVersion`, `manifest.id` (lowercase slug), `manifest.version`, and non-empty `css` before sending anything.
 
+Preview validation is structural, not semantic: the client can verify format and presence but cannot know whether pixels contain private account, repository, project, task, path, attachment, or conversation information. The agent must inspect and show the exact public preview before the network call, offering a sanitized workspace capture or generic design preview when a real capture exposes user data.
+
 ## Link (skin) submission body
 
 `scripts/submit-skin.ts` posts a `codex-skin` JSON body to the same endpoint to publish a linked directory entry with no installable package:

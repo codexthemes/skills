@@ -132,6 +132,49 @@ export async function validateTheme(themeDirectory: string): Promise<ValidationR
     body: match[2]!,
   }));
 
+  if (design.layoutMode !== 'native-background') {
+    const compatibilitySignals = [
+      '--color-token-bg-primary',
+      '--color-token-foreground',
+      '--color-token-input-background',
+      '--color-token-menu-background',
+      '--color-token-conversation-body',
+      '--color-token-text-code-block-background',
+      '--color-background-surface',
+      '--color-background-surface-under',
+      '--color-background-panel',
+      '--color-background-control',
+      '--color-background-control-opaque',
+      '--color-background-editor-opaque',
+      '--color-text-foreground',
+      '--color-text-foreground-secondary',
+      '--color-text-foreground-tertiary',
+      '--color-icon-primary',
+      '--color-icon-secondary',
+      '--color-icon-tertiary',
+      '--color-border',
+      '--color-border-light',
+      '--color-border-heavy',
+      '--color-border-focus',
+    ];
+    const missingSignals = compatibilitySignals.filter((signal) => !cleanCss.includes(signal));
+    if (missingSignals.length) {
+      errors.push(`component-changing theme lacks native compatibility signals: ${missingSignals.join(', ')}`);
+    }
+
+    if (!/\[data-codex-terminal(?:=|\])/.test(cleanCss)) {
+      errors.push('component-changing theme must override the verified [data-codex-terminal] root');
+    }
+    const importantViewport = rules.some(({ selector, body }) =>
+      selector.includes('.xterm-viewport') && /background(?:-color)?\s*:[^;]+!important/i.test(body));
+    if (!importantViewport) {
+      errors.push('xterm viewport needs a scoped important background to override mounted inline colors');
+    }
+    if (!cleanCss.includes('--vscode-terminal-background')) {
+      errors.push('component-changing theme must map --vscode-terminal-background on its terminal contract');
+    }
+  }
+
   for (const { selector, body } of rules) {
     const normalized = selector.replace(/\s+/g, ' ');
     const broad = /\b(?:aside|main)\b[^,{]*\*/i.test(normalized) || /(^|,)\s*svg\s*(?:,|$)/i.test(normalized);
