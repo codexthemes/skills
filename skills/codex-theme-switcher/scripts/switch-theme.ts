@@ -10,7 +10,7 @@ import { promisify } from 'node:util';
 import { runtimeStatePath, stateRoot, themesRoot } from './paths.ts';
 import { decodePng, judgeSamples, textSamplerSource, type ReadabilityResult, type TextSample } from './readability.ts';
 
-type Command = 'list' | 'apply' | 'status' | 'restore';
+type Command = 'list' | 'apply' | 'status' | 'restore' | 'rollback';
 
 interface Options {
   command: Command;
@@ -42,6 +42,8 @@ interface Registration {
 interface RuntimeState {
   port: number;
   themeId: string;
+  /** Theme that was active before the current one; rollback returns to it. */
+  previousThemeId?: string | null;
   registrations?: Registration[];
   /** Legacy single-target fields kept for compatibility with older applies. */
   targetId?: string;
@@ -54,8 +56,8 @@ const defaultPorts = [9335, 9222, 9223];
 
 function parseArgs(argv: string[]): Options {
   const command = argv.shift() as Command | undefined;
-  if (!command || !['list', 'apply', 'status', 'restore'].includes(command)) {
-    throw new Error('Usage: switch-theme.ts <list|apply THEME_ID_OR_DIR|status|restore> [--port 9335] [--launch] [--relaunch] [--app /Applications/Codex.app]');
+  if (!command || !['list', 'apply', 'status', 'restore', 'rollback'].includes(command)) {
+    throw new Error('Usage: switch-theme.ts <list|apply THEME_ID_OR_DIR|status|restore|rollback> [--port 9335] [--launch] [--relaunch] [--app /Applications/Codex.app]');
   }
   const options: Options = { command, port: 9335, launch: false, relaunch: false, force: false, worker: false };
   if (command === 'apply' && argv[0] && !argv[0].startsWith('--')) {
@@ -580,6 +582,10 @@ async function apply(options: Options): Promise<void> {
   await writeState({
     port: found.port,
     themeId: manifest.id,
+    previousThemeId:
+      previousState?.themeId && previousState.themeId !== manifest.id
+        ? previousState.themeId
+        : previousState?.previousThemeId ?? null,
     registrations,
     ...(registrations[0] ? { targetId: registrations[0].targetId, scriptIdentifier: registrations[0].identifier } : {}),
   });
@@ -631,6 +637,7 @@ async function revertAfterFailedApply(
       await writeState({
         port,
         themeId: prevManifest.id,
+        previousThemeId: previousState?.previousThemeId ?? null,
         registrations: prevRegistrations,
         ...(prevRegistrations[0] ? { targetId: prevRegistrations[0].targetId, scriptIdentifier: prevRegistrations[0].identifier } : {}),
       });
@@ -727,10 +734,27 @@ async function list(options: Options): Promise<void> {
   }, null, 2));
 }
 
+async function rollback(options: Options): Promise<void> {
+  const state = await readJson<RuntimeState>(statePath);
+  if (!state?.themeId) {
+    console.log(JSON.stringify({
+      status: 'native',
+      note: 'No theme is currently applied; nothing to roll back.',
+    }, null, 2));
+    return;
+  }
+  if (state.previousThemeId && state.previousThemeId !== state.themeId) {
+    await apply({ ...options, command: 'apply', theme: state.previousThemeId });
+    return;
+  }
+  await restore(options);
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   if (options.command === 'apply') await apply(options);
   else if (options.command === 'restore') await restore(options);
+  else if (options.command === 'rollback') await rollback(options);
   else if (options.command === 'list') await list(options);
   else await status(options);
 }

@@ -56,9 +56,17 @@ npx tsx scripts/switch-theme.ts apply <theme-id> --launch --relaunch
 
 ## Step 4: always hand the user the escape hatch
 
-Every successful apply report must end with the restore hint, for example: "Reply `restore` at any time and I will return Codex to its native look — fully quitting Codex also removes the theme." A user who dislikes the result must never have to ask how to undo it.
+Every successful apply report must end with the undo hints, for example: "Reply `rollback` to return to the theme you had before, or `restore` for the native Codex look — fully quitting Codex also removes the theme." A user who dislikes the result must never have to ask how to undo it.
 
-When the user asks to restore (or replies `restore`):
+Every apply records the previously active theme. When the user replies `rollback` (or says the new theme is broken, ugly, or not what they wanted):
+
+```bash
+npx tsx scripts/switch-theme.ts rollback
+```
+
+This re-applies the previously active theme, or restores the native look when there is none. It runs through the same apply pipeline, so the readability gate and `status` verification still apply. (A theme that fails the readability gate never needs a manual rollback — the apply auto-reverts on its own.)
+
+When the user asks for the native look instead (or replies `restore`):
 
 ```bash
 npx tsx scripts/switch-theme.ts restore
