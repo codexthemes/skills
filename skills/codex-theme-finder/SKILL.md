@@ -23,11 +23,20 @@ Run more than one search with different terms when the first result set is thin,
 
 ## Step 2: present the results
 
-Summarize the matching themes for the user: id, name, author, short description, and the public URL when present. Recommend the closest matches to what the user described instead of dumping the raw list. Keep the theme `id` visible — codex-theme-installer needs it to install a theme.
+Present the closest matches — several candidates (up to 5) when the gallery has them, not just the first hit; run one or two broader searches before concluding there is only a single match. For each recommended theme show: id, name, author, short description, the public URL, **and its preview image**. Every result carries an `image` URL: download it to a temporary file and display that local image to the user — do not hotlink the remote URL in chat markdown, it often fails to render. If a result has no image, say "no preview" instead of showing a broken embed. Keep the theme `id` visible — codex-theme-installer needs it.
 
 If the result is empty, say so and suggest broader terms, or offer to create a custom theme with codex-theme-creator.
 
-## Step 3: handle quota and rate limits
+## Step 3: offer installation — never end at the list
+
+Finding is not the finish line; close the loop into installation:
+
+- Several candidates → ask which one to install, for example: "Reply with a theme id (e.g. `shaolin-kickoff`) and I will install and apply it."
+- Exactly one good match → offer it directly: "Reply `install` and I will install and apply `<id>`."
+
+When the user picks, hand off to codex-theme-installer (bootstrap it the same way this skill was bootstrapped if missing: `npx skills add codexthemes/skills --skill codex-theme-installer -g -a codex`); the installer then chains into activation via codex-theme-switcher. Never end the conversation with only a result list and no install path.
+
+## Step 4: handle quota and rate limits
 
 On HTTP `429` or `402` the free quota is exhausted; the script's error message includes any `Retry-After` value. Do not retry in a loop. Tell the user the free search quota is used up and guide them to configure a personal API key:
 
