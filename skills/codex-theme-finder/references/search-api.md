@@ -28,7 +28,13 @@ Key resolution order:
 
 ## Responses
 
-- `2xx`: JSON result, shape `{ "themes": [ { "id", "name", "description", "author", "mode", "tags", "image", "url", "installable", "downloadUrl", "verified" } ], "total", "page", "limit", "sort", "query" }`. `installable: true` means codex-theme-installer can install the theme by `id`. The client passes the body through unmodified under `result`.
+- `2xx`: JSON result, shape `{ "themes": [ { "id", "name", "description", "author", "mode", "tags", "image", "url", "kind", "installable", "downloadUrl", "guidance", "verified" } ], "total", "page", "limit", "sort", "query" }`. The client passes the body through unmodified under `result`. Fields that drive the next step:
+  - `url` — the theme's public detail page on codexthemes.ai. Always share it with the user.
+  - `kind` — `"theme"` (has a downloadable package) or `"skin"` (design reference only, no package).
+  - `installable: true` — a `.codex-theme` package; codex-theme-installer can install it by `id` (`downloadUrl` is set).
+  - `kind: "theme"` with `installable: false` — an archive package (e.g. zip); `downloadUrl` is `null`. Not agent-installable: the user opens `url`, signs in, downloads the archive, and installs manually.
+  - `kind: "skin"` — no package at all; offer to recreate the look with codex-theme-creator.
+  - `guidance` — a server-provided sentence restating the correct next step for that entry.
 - `429` (and `402`): the free quota is exhausted or the client is rate limited. A `Retry-After` header, when present, is surfaced. The remedy is a personal API key from `https://codexthemes.ai/settings/apikeys`.
 - `401` / `403`: a configured API key is invalid, revoked, or lacks permission; create a fresh key.
 
