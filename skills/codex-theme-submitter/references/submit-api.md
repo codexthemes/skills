@@ -46,6 +46,25 @@ The body is the portable `.codex-theme` package exactly as exported by codex-the
 
 `art`, `preview`, and `verification` are optional. `preview` should be a raster capture of the themed workspace (sidebar + home); the server uses it as the gallery and detail image and falls back to `art` only when no preview is embedded — a package without a workspace preview lists with the raw artwork, which looks wrong on the site. The client validates `format`, `schemaVersion`, `manifest.id` (lowercase slug), `manifest.version`, and non-empty `css` before sending anything.
 
+## Link (skin) submission body
+
+`scripts/submit-skin.ts` posts a `codex-skin` JSON body to the same endpoint to publish a linked directory entry with no installable package:
+
+```json
+{
+  "format": "codex-skin",
+  "schemaVersion": 1,
+  "name": "<skin name>",
+  "author": "<author>",
+  "description": "<one-line description>",
+  "mode": "dark",
+  "sourceUrl": "https://example.com/theme-page",
+  "preview": { "filename": "preview.png", "mimeType": "image/png", "base64": "..." }
+}
+```
+
+`name`, `sourceUrl` (http/https), and `preview` (PNG/JPEG/WebP ≤ 10 MB, a themed workspace capture) are required; `author`, `description`, and `mode` are optional. The `201` response mirrors the theme response with `url` pointing at `https://codexthemes.ai/skins/<slug>`; resubmitting the same name updates the entry in place.
+
 ## Responses
 
 - `201`: the theme is published immediately — there is no review queue. The response JSON is passed through to the user: `{ "status": "published", "id", "name", "version", "submissionId", "url", "message" }`. `url` is the theme's public detail page (`https://codexthemes.ai/themes/<id>`); always report it. Resubmitting the same theme id updates the published theme in place — bump `manifest.version` first.

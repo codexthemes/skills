@@ -7,6 +7,7 @@ import path from 'node:path';
 
 import { clearApiKey, maskApiKey, resolveApiKey, saveApiKey } from './apikey.ts';
 import { credentialsPath, submitEndpoint } from './paths.ts';
+import { submitSkin, validateSkinOptions } from './submit-skin.ts';
 import { submitTheme, validatePackage } from './submit-theme.ts';
 
 const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codexthemes-submitter-'));
@@ -79,6 +80,26 @@ try {
   await fs.writeFile(badPackagePath, JSON.stringify({ format: 'codex-theme' }), 'utf8');
   await assert.rejects(submitTheme(badPackagePath, true), /failed validation/);
   await assert.rejects(submitTheme(packagePath.replace('.codex-theme', '-missing.codex-theme'), true), /ENOENT/);
+
+  const previewPath = path.join(tempDir, 'preview.png');
+  await fs.writeFile(previewPath, Buffer.from('89504e470d0a1a0a', 'hex'));
+  const validSkin = {
+    name: 'Test Skin',
+    sourceUrl: 'https://example.com/theme',
+    previewPath,
+    dryRun: true,
+  };
+  assert.deepEqual(validateSkinOptions(validSkin), []);
+  assert.match(validateSkinOptions({ ...validSkin, name: ' ' }).join('\n'), /name/);
+  assert.match(validateSkinOptions({ ...validSkin, sourceUrl: 'ftp://x' }).join('\n'), /source-url/);
+  assert.match(validateSkinOptions({ ...validSkin, previewPath: '/tmp/p.gif' }).join('\n'), /preview/);
+  assert.match(validateSkinOptions({ ...validSkin, mode: 'sepia' }).join('\n'), /mode/);
+
+  const skinDry = await submitSkin(validSkin);
+  assert.equal(skinDry.status, 'dry-run');
+  assert.equal(skinDry.name, 'Test Skin');
+  assert.equal(skinDry.endpoint, submitEndpoint());
+  await assert.rejects(submitSkin({ ...validSkin, sourceUrl: 'not-a-url' }), /source-url/);
 
   process.env.CODEXTHEMES_API_BASE = 'https://staging.codexthemes.ai/';
   assert.equal(submitEndpoint(), 'https://staging.codexthemes.ai/api/themes/submit');

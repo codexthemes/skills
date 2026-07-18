@@ -1,13 +1,18 @@
 ---
 name: codex-theme-submitter
-description: Submit a packaged .codex-theme file to CodexThemes through the authenticated codexthemes.ai submit API. Use when a user asks to submit, publish, upload, or share a Codex theme on codexthemes.ai, asks to configure or check a CodexThemes API key, or has an exported .codex-theme package ready for submission.
+description: Submit a packaged .codex-theme file or a linked theme showcase (skin) to CodexThemes through the authenticated codexthemes.ai submit API. Use when a user asks to submit, publish, upload, or share a Codex theme on codexthemes.ai, shares a URL of a theme to list in the directory, asks to configure or check a CodexThemes API key, or has an exported .codex-theme package ready for submission.
 ---
 
 # Submit a Codex theme to CodexThemes
 
-Submit an existing, already-exported `.codex-theme` package to codexthemes.ai. This skill is standalone: its TypeScript scripts own API key storage and submission. It does not create, edit, validate, or export theme sources — that is codex-theme-creator's job. The only required local tools are Node.js 20+ and `npx`.
+Submit an existing, already-exported `.codex-theme` package — or a linked theme showcase (skin) extracted from a URL — to codexthemes.ai. This skill is standalone: its TypeScript scripts own API key storage and submission. It does not create, edit, validate, or export theme sources — that is codex-theme-creator's job. The only required local tools are Node.js 20+ and `npx`.
 
 Read `references/submit-api.md` before diagnosing an unexpected API response or changing endpoint behavior. Run all commands from the installed skill directory.
+
+Pick the path by what the user has:
+
+- an exported `.codex-theme` package (or a local theme id) → **package submission**, Steps 1–5.
+- a URL of a theme showcase (repo, gallery, post) with no local package → **link submission**, see "Submit a linked theme from a URL".
 
 ## Step 1: locate the package
 
@@ -76,3 +81,24 @@ On failure, report the HTTP status and server message plainly, then act on it:
 - Other errors: see `references/submit-api.md`.
 
 Never retry a failed submission in a loop, and never claim a theme was submitted unless the script reported `"status": "submitted"`.
+
+## Submit a linked theme from a URL
+
+When the user shares a URL of a theme showcase (a repo, gallery page, or post) instead of a local package, publish it as a linked directory entry (skin) — no installable package required.
+
+1. **Extract**: fetch the page and pull out the theme name, the author (page author, repo owner, or byline), and the best preview image — a capture of the themed workspace (window with sidebar and content), preferring `og:image` or a README/screenshot image. Never use a bare wallpaper or logo as the preview.
+2. **Download the preview** to a temporary file (PNG, JPEG, or WebP, under 10 MB). Do not save it into a project workspace.
+3. **Confirm with the user** before uploading: show the extracted name, author, source URL, and which image will be the preview. Let them correct any field.
+4. **Submit** (API key required, same as Step 2; the same no-web-form rule applies):
+
+```bash
+npx tsx scripts/submit-skin.ts \
+  --name "<theme name>" \
+  --source-url "<the user's URL>" \
+  --preview /absolute/preview.png \
+  [--author "<author>"] [--description "<one-line description>"] [--mode light|dark|mixed] [--dry-run]
+```
+
+5. **Report**: on success the response contains the public listing URL (`https://codexthemes.ai/skins/<slug>`) — always give the user that link. Resubmitting the same name updates the published entry in place.
+
+If the page has no usable workspace preview image, stop and ask the user to provide one instead of substituting artwork or generating a mockup.
