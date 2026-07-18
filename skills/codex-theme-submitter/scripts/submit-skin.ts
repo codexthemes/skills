@@ -24,7 +24,17 @@ export interface SkinOptions {
   author?: string;
   description?: string;
   mode?: string;
+  tags?: string;
   dryRun: boolean;
+}
+
+export function parseTags(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((tag) => tag.trim().toLowerCase())
+    .filter(Boolean)
+    .slice(0, 10);
 }
 
 function parseArgs(argv: string[]): SkinOptions {
@@ -44,11 +54,12 @@ function parseArgs(argv: string[]): SkinOptions {
     else if (arg === '--author') options.author = value;
     else if (arg === '--description') options.description = value;
     else if (arg === '--mode') options.mode = value;
+    else if (arg === '--tags') options.tags = value;
     else throw new Error(`Unknown argument: ${arg}`);
   }
   if (!options.name || !options.slug || !options.sourceUrl || !options.previewPath) {
     throw new Error(
-      'Usage: submit-skin.ts --name "<skin name>" --slug <ascii-slug> --source-url <https://...> --preview /absolute/preview.png [--author "<name>"] [--description "<text>"] [--mode light|dark|mixed] [--dry-run]',
+      'Usage: submit-skin.ts --name "<skin name>" --slug <ascii-slug> --source-url <https://...> --preview /absolute/preview.png [--author "<name>"] [--description "<text>"] [--mode light|dark|mixed] [--tags "tag1, tag2"] [--dry-run]',
     );
   }
   return options;
@@ -74,6 +85,16 @@ export function validateSkinOptions(options: SkinOptions): string[] {
   if (options.mode !== undefined && !['light', 'dark', 'mixed'].includes(options.mode)) {
     errors.push('mode must be light, dark, or mixed');
   }
+  if (options.author !== undefined && /[(（]\s*@|@[A-Za-z0-9_]+\s*[)）]/.test(options.author)) {
+    errors.push('author must be the display name only - drop parenthesized handles like "(@handle)"; the handle stays reachable through source-url');
+  }
+  const tags = parseTags(options.tags);
+  if (options.tags !== undefined && tags.length === 0) {
+    errors.push('tags must be a comma-separated list, for example "editorial, dark, minimal"');
+  }
+  if (tags.some((tag) => tag.length > 40)) {
+    errors.push('each tag must be at most 40 characters');
+  }
   return errors;
 }
 
@@ -89,6 +110,7 @@ async function buildBody(options: SkinOptions): Promise<string> {
     ...(options.author?.trim() ? { author: options.author.trim() } : {}),
     ...(options.description?.trim() ? { description: options.description.trim() } : {}),
     ...(options.mode ? { mode: options.mode } : {}),
+    ...(parseTags(options.tags).length > 0 ? { tags: parseTags(options.tags) } : {}),
     sourceUrl: options.sourceUrl,
     preview: {
       filename: path.basename(options.previewPath),
@@ -110,6 +132,7 @@ export async function submitSkin(options: SkinOptions): Promise<Record<string, u
       status: 'dry-run',
       name: options.name.trim(),
       slug: options.slug,
+      tags: parseTags(options.tags),
       sourceUrl: options.sourceUrl,
       previewPath: options.previewPath,
       endpoint,

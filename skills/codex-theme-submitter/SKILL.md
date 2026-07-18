@@ -92,10 +92,10 @@ Never retry a failed submission in a loop, and never claim a theme was submitted
 
 When the user shares a URL of a theme showcase (a repo, gallery page, or post), publish it as a linked directory entry (skin). This path is complete on its own: it requires no `.codex-theme` package, no export, and no local theme source, and it must never stall waiting for one — the extracted name, author, preview image, and the URL itself are the entire submission.
 
-1. **Extract**: fetch the page and pull out the theme name, the author (page author, repo owner, or byline), and the best preview image — a capture of the themed workspace (window with sidebar and content), preferring `og:image` or a README/screenshot image. Never use a bare wallpaper or logo as the preview.
-2. **Derive the slug**: a short lowercase ASCII slug from the theme name — it becomes the public URL `https://codexthemes.ai/skins/<slug>`. Romanize or translate non-Latin names (功夫女足 → `kungfu-womens-football`); never let it fall back to a timestamp id, and never use unrelated words.
+1. **Extract**: fetch the page and pull out the theme name, the author, and the best preview image — a capture of the themed workspace (window with sidebar and content), preferring `og:image` or a README/screenshot image. Never use a bare wallpaper or logo as the preview. The author is the **display name only** (page author, repo owner, or byline): strip @handles and any parenthesized ids — `数字探索者 (@slimeXDX)` → `数字探索者` — the handle stays reachable through the source URL, and the script rejects authors containing `(@handle)`.
+2. **Derive the slug and tags**: a short lowercase ASCII slug from the theme name — it becomes the public URL `https://codexthemes.ai/skins/<slug>`. Romanize or translate non-Latin names (功夫女足 → `kungfu-womens-football`); never let it fall back to a timestamp id, and never use unrelated words. Also derive 2–5 short lowercase English tags describing the style, mood, and subject from the page and preview (for example `editorial, dark, minimal`) — always pass them; tags drive gallery filtering.
 3. **Download the preview** to a temporary file (PNG, JPEG, or WebP, under 10 MB). Do not save it into a project workspace.
-4. **Confirm with the user** before uploading: show the extracted name, slug, author, source URL, and which image will be the preview. Let them correct any field.
+4. **Confirm with the user** before uploading: show the extracted name, slug, author, tags, source URL, and which image will be the preview. Let them correct any field.
 5. **Submit** (API key required, same as Step 2; the same no-web-form rule applies):
 
 ```bash
@@ -104,7 +104,8 @@ npx tsx scripts/submit-skin.ts \
   --slug <ascii-slug> \
   --source-url "<the user's URL>" \
   --preview /absolute/preview.png \
-  [--author "<author>"] [--description "<one-line description>"] [--mode light|dark|mixed] [--dry-run]
+  --tags "<tag1, tag2, tag3>" \
+  [--author "<display name>"] [--description "<one-line description>"] [--mode light|dark|mixed] [--dry-run]
 ```
 
 6. **Report**: on success the response contains the public listing URL (`https://codexthemes.ai/skins/<slug>`) — always give the user that link, taken from the response: if the slug already belongs to another submitter, the server publishes under a random-suffixed slug instead of overwriting. Resubmitting your own slug with the same API key updates the published entry in place.

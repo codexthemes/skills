@@ -56,15 +56,16 @@ The body is the portable `.codex-theme` package exactly as exported by codex-the
   "schemaVersion": 1,
   "name": "<skin name>",
   "slug": "<ascii-slug>",
-  "author": "<author>",
+  "author": "<display name, no @handle>",
   "description": "<one-line description>",
   "mode": "dark",
+  "tags": ["editorial", "dark", "minimal"],
   "sourceUrl": "https://example.com/theme-page",
   "preview": { "filename": "preview.png", "mimeType": "image/png", "base64": "..." }
 }
 ```
 
-`name`, `sourceUrl` (http/https), and `preview` (PNG/JPEG/WebP ≤ 10 MB, a themed workspace capture) are required. `slug` sets the public URL path and should always be sent — a lowercase ASCII slug derived from the theme name (romanize or translate non-Latin names); without it the server slugifies `name`, and a fully non-Latin name degrades to a timestamp id. `author`, `description`, and `mode` are optional. The `201` response mirrors the theme response with `url` pointing at `https://codexthemes.ai/skins/<slug>`; resubmitting the same name updates the entry in place.
+`name`, `sourceUrl` (http/https), and `preview` (PNG/JPEG/WebP ≤ 10 MB, a themed workspace capture) are required. `slug` sets the public URL path and should always be sent — a lowercase ASCII slug derived from the theme name (romanize or translate non-Latin names); without it the server slugifies `name`, and a fully non-Latin name degrades to a timestamp id. `author` (display name only — no parenthesized @handles), `description`, `mode`, and `tags` (up to 10 short lowercase strings; always send 2–5) are optional fields the server stores with the entry. The `201` response mirrors the theme response with `url` pointing at `https://codexthemes.ai/skins/<slug>`; resubmitting the same name updates the entry in place.
 
 ## Responses
 

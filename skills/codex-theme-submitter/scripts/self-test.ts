@@ -118,11 +118,17 @@ try {
   assert.match(validateSkinOptions({ ...validSkin, sourceUrl: 'ftp://x' }).join('\n'), /source-url/);
   assert.match(validateSkinOptions({ ...validSkin, previewPath: '/tmp/p.gif' }).join('\n'), /preview/);
   assert.match(validateSkinOptions({ ...validSkin, mode: 'sepia' }).join('\n'), /mode/);
+  assert.match(validateSkinOptions({ ...validSkin, author: '数字探索者 (@slimeXDX)' }).join('\n'), /display name/);
+  assert.deepEqual(validateSkinOptions({ ...validSkin, author: '数字探索者' }), []);
+  assert.deepEqual(validateSkinOptions({ ...validSkin, tags: 'Editorial, Dark, minimal' }), []);
+  assert.match(validateSkinOptions({ ...validSkin, tags: ' , ' }).join('\n'), /tags/);
 
   const skinDry = await submitSkin(validSkin);
   assert.equal(skinDry.status, 'dry-run');
   assert.equal(skinDry.name, 'Test Skin');
   assert.equal(skinDry.slug, 'test-skin');
+  const skinDryTags = await submitSkin({ ...validSkin, tags: 'Editorial, Dark, minimal' });
+  assert.deepEqual(skinDryTags.tags, ['editorial', 'dark', 'minimal']);
   assert.equal(skinDry.endpoint, submitEndpoint());
   await assert.rejects(submitSkin({ ...validSkin, sourceUrl: 'not-a-url' }), /source-url/);
 
