@@ -9,10 +9,10 @@ Submit an existing, already-exported `.codex-theme` package — or a linked them
 
 Read `references/submit-api.md` before diagnosing an unexpected API response or changing endpoint behavior. Run all commands from the installed skill directory.
 
-Pick the path by what the user has:
+Pick the path by what the user shared, not by what exists on disk:
 
-- an exported `.codex-theme` package (or a local theme id) → **package submission**, Steps 1–5.
-- a URL of a theme showcase (repo, gallery, post) with no local package → **link submission**, see "Submit a linked theme from a URL".
+- an exported `.codex-theme` package or a local theme id → **package submission**, Steps 1–5.
+- a URL of a theme showcase (repo, gallery, post) → **link submission**, see "Submit a linked theme from a URL". A link submission needs no package, no export, and no local theme source — never search `~/.codexthemes/exports/` for a match, never ask the user to export a package first, and never block on a "missing" package. Use the package path for a URL share only if the user explicitly says they want the installable package published.
 
 ## Step 1: locate the package
 
@@ -84,7 +84,7 @@ Never retry a failed submission in a loop, and never claim a theme was submitted
 
 ## Submit a linked theme from a URL
 
-When the user shares a URL of a theme showcase (a repo, gallery page, or post) instead of a local package, publish it as a linked directory entry (skin) — no installable package required.
+When the user shares a URL of a theme showcase (a repo, gallery page, or post), publish it as a linked directory entry (skin). This path is complete on its own: it requires no `.codex-theme` package, no export, and no local theme source, and it must never stall waiting for one — the extracted name, author, preview image, and the URL itself are the entire submission.
 
 1. **Extract**: fetch the page and pull out the theme name, the author (page author, repo owner, or byline), and the best preview image — a capture of the themed workspace (window with sidebar and content), preferring `og:image` or a README/screenshot image. Never use a bare wallpaper or logo as the preview.
 2. **Download the preview** to a temporary file (PNG, JPEG, or WebP, under 10 MB). Do not save it into a project workspace.
