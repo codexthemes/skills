@@ -97,7 +97,7 @@ async function resolvePreviewPath(themeDir: string, manifest: ThemeManifest): Pr
   }
   const rasters = entries.filter((name) => /\.(png|jpe?g|webp)$/i.test(name)).sort();
   if (rasters.length === 0) return null;
-  const preferred = rasters.find((name) => name.includes('1440')) ?? rasters[0];
+  const preferred = rasters.find((name) => name.includes('1440')) ?? rasters[0]!;
   return path.join(themeDir, 'previews', preferred);
 }
 

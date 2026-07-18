@@ -71,6 +71,27 @@ try {
     settingsUrl: 'https://codexthemes.ai/settings/apikeys',
   });
 
+  // Gallery preview enforcement: no preview → dry-run warns, real submit refuses.
+  assert.equal((dryWithoutKey.preview as { present: boolean }).present, false);
+  await assert.rejects(submitTheme(packagePath, false), /workspace preview.*--preview/s);
+
+  const overridePath = path.join(tempDir, 'workspace-shot.png');
+  await fs.writeFile(overridePath, Buffer.from('89504e470d0a1a0a', 'hex'));
+  const dryWithOverride = await submitTheme(packagePath, true, { previewPath: overridePath });
+  assert.deepEqual(dryWithOverride.preview, { present: true, source: 'override', filename: 'workspace-shot.png' });
+  await assert.rejects(
+    submitTheme(packagePath, true, { previewPath: path.join(tempDir, 'shot.gif') }),
+    /must be a \.png/,
+  );
+
+  const embeddedPath = path.join(tempDir, 'embedded.codex-theme');
+  await fs.writeFile(embeddedPath, JSON.stringify({
+    ...validPackage,
+    preview: { filename: 'home-1440x900.png', mimeType: 'image/png', base64: 'aGk=' },
+  }), 'utf8');
+  const dryEmbedded = await submitTheme(embeddedPath, true);
+  assert.deepEqual(dryEmbedded.preview, { present: true, source: 'package', filename: 'home-1440x900.png' });
+
   await saveApiKey('cx-test-1234567890');
   const dryWithKey = await submitTheme(packagePath, true);
   assert.deepEqual(dryWithKey.apiKey, { configured: true, source: 'credentials-file', apiKey: 'cx-t…7890' });

@@ -8,10 +8,19 @@ import { apiKeySettingsUrl, maskApiKey, resolveApiKey } from './apikey.ts';
 import { submitEndpoint } from './paths.ts';
 
 const maxPackageBytes = 30 * 1024 * 1024;
+const maxPreviewBytes = 10 * 1024 * 1024;
+const previewTypes: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+};
 
 interface SubmitOptions {
   packagePath: string;
   dryRun: boolean;
+  previewPath?: string;
+  allowArtPreview: boolean;
 }
 
 interface PortablePackage {
@@ -19,18 +28,29 @@ interface PortablePackage {
   schemaVersion: number;
   manifest: { id: string; name?: string; version: string };
   css: string;
+  preview?: { filename: string; mimeType: string; base64: string };
   [key: string]: unknown;
 }
 
 function parseArgs(argv: string[]): SubmitOptions {
   const packageArg = argv.shift();
   if (!packageArg || packageArg.startsWith('--')) {
-    throw new Error('Usage: submit-theme.ts /absolute/path/theme-id.codex-theme [--dry-run]');
+    throw new Error('Usage: submit-theme.ts /absolute/path/theme-id.codex-theme [--dry-run] [--preview /absolute/screenshot.png] [--allow-art-preview]');
   }
-  const options: SubmitOptions = { packagePath: path.resolve(packageArg), dryRun: false };
-  for (const arg of argv) {
-    if (arg !== '--dry-run') throw new Error(`Unknown argument: ${arg}`);
-    options.dryRun = true;
+  const options: SubmitOptions = { packagePath: path.resolve(packageArg), dryRun: false, allowArtPreview: false };
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--dry-run') {
+      options.dryRun = true;
+    } else if (arg === '--preview') {
+      const value = argv[++index];
+      if (!value) throw new Error('--preview requires an image path');
+      options.previewPath = path.resolve(value);
+    } else if (arg === '--allow-art-preview') {
+      options.allowArtPreview = true;
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
   }
   return options;
 }
@@ -81,11 +101,45 @@ async function readPackage(packagePath: string): Promise<{ portable: PortablePac
   return { portable: portable as PortablePackage, body };
 }
 
-export async function submitTheme(packagePath: string, dryRun = false): Promise<Record<string, unknown>> {
+const missingPreviewGuidance =
+  'The package has no workspace preview, so the gallery card would show the raw background artwork instead of the real themed app. ' +
+  'Re-export with codex-theme-creator (it embeds the newest capture from the theme\'s previews/ directory), or pass ' +
+  '--preview /absolute/screenshot.png with a full-app screenshot that shows the sidebar and home content. ' +
+  'Pass --allow-art-preview only when the user explicitly accepts the artwork as the gallery image.';
+
+async function loadPreviewOverride(previewPath: string): Promise<{ filename: string; mimeType: string; base64: string }> {
+  const mimeType = previewTypes[path.extname(previewPath).toLowerCase()];
+  if (!mimeType) throw new Error(`--preview must be a .png, .jpg, or .webp image: ${previewPath}`);
+  const data = await fs.readFile(previewPath);
+  if (data.length === 0 || data.length > maxPreviewBytes) {
+    throw new Error(`--preview image must be non-empty and under 10 MB: ${previewPath}`);
+  }
+  return { filename: path.basename(previewPath), mimeType, base64: data.toString('base64') };
+}
+
+export async function submitTheme(
+  packagePath: string,
+  dryRun = false,
+  extras: { previewPath?: string; allowArtPreview?: boolean } = {},
+): Promise<Record<string, unknown>> {
   const resolvedPath = path.resolve(packagePath);
-  const { portable, body } = await readPackage(resolvedPath);
+  let { portable, body } = await readPackage(resolvedPath);
+
+  let previewSource: 'package' | 'override' | 'none' = portable.preview ? 'package' : 'none';
+  if (extras.previewPath) {
+    portable = { ...portable, preview: await loadPreviewOverride(extras.previewPath) };
+    body = `${JSON.stringify(portable, null, 2)}\n`;
+    previewSource = 'override';
+  }
+  if (previewSource === 'none' && !extras.allowArtPreview && !dryRun) {
+    throw new Error(missingPreviewGuidance);
+  }
+
   const endpoint = submitEndpoint();
   const apiKey = await resolveApiKey();
+  const preview = previewSource === 'none'
+    ? { present: false, galleryFallback: 'raw background artwork', guidance: missingPreviewGuidance }
+    : { present: true, source: previewSource, filename: portable.preview!.filename };
 
   if (dryRun) {
     return {
@@ -94,6 +148,7 @@ export async function submitTheme(packagePath: string, dryRun = false): Promise<
       packageValid: true,
       themeId: portable.manifest.id,
       themeVersion: portable.manifest.version,
+      preview,
       endpoint,
       apiKey: apiKey ? { configured: true, source: apiKey.source, apiKey: maskApiKey(apiKey.key) } : { configured: false, settingsUrl: apiKeySettingsUrl },
     };
@@ -143,6 +198,7 @@ export async function submitTheme(packagePath: string, dryRun = false): Promise<
     packagePath: resolvedPath,
     themeId: portable.manifest.id,
     themeVersion: portable.manifest.version,
+    preview,
     endpoint,
     httpStatus: response.status,
     ...(themeUrl ? { themeUrl } : {}),
@@ -152,7 +208,10 @@ export async function submitTheme(packagePath: string, dryRun = false): Promise<
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
-  const result = await submitTheme(options.packagePath, options.dryRun);
+  const result = await submitTheme(options.packagePath, options.dryRun, {
+    ...(options.previewPath ? { previewPath: options.previewPath } : {}),
+    allowArtPreview: options.allowArtPreview,
+  });
   console.log(JSON.stringify(result, null, 2));
 }
 

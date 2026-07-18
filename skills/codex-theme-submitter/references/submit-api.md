@@ -44,7 +44,7 @@ The body is the portable `.codex-theme` package exactly as exported by codex-the
 }
 ```
 
-`art`, `preview`, and `verification` are optional. `preview` should be a raster capture of the themed workspace (sidebar + home); the server uses it as the gallery and detail image and falls back to `art` only when no preview is embedded — a package without a workspace preview lists with the raw artwork, which looks wrong on the site. The client validates `format`, `schemaVersion`, `manifest.id` (lowercase slug), `manifest.version`, and non-empty `css` before sending anything.
+`art` and `verification` are optional. `preview` must be a raster capture of the themed workspace (sidebar + home); the server uses it as the gallery and detail image and falls back to `art` only when no preview is embedded — a package without a workspace preview lists with the raw artwork, which looks wrong on the site. For that reason the client **refuses to submit** a package without a `preview` unless `--allow-art-preview` is passed; `--preview /absolute/screenshot.png` injects or replaces the embedded preview at submit time. The client also validates `format`, `schemaVersion`, `manifest.id` (lowercase slug), `manifest.version`, and non-empty `css` before sending anything.
 
 ## Link (skin) submission body
 

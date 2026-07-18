@@ -21,7 +21,7 @@ Submit only a portable `.codex-theme` package. The managed export location is `~
 - If the user names a package path, use it.
 - If the user names a theme id or source directory, look for the matching file in `~/.codexthemes/exports/`.
 - If no package exists, stop and tell the user to export one first with codex-theme-creator (`export-theme.ts`). Never hand-assemble the package JSON or submit raw theme source files.
-- Check the package embeds a `preview` (a workspace capture with the sidebar — it becomes the gallery and detail image on codexthemes.ai). If it only has `art`, the site would show the raw background image; ask the user to add a workspace preview to the theme's `previews/` directory and re-export before submitting.
+- The package must embed a `preview` — a workspace capture with the sidebar visible; it becomes the gallery and detail image on codexthemes.ai. `submit-theme.ts` **refuses to submit** a package that lacks one (the gallery would show the raw background artwork). Fix it by re-exporting with codex-theme-creator after adding a capture to the theme's `previews/` directory, or by passing `--preview /absolute/screenshot.png` with a full-app screenshot at submit time. Never pass the theme's background artwork as `--preview`; `--allow-art-preview` exists only for when the user explicitly accepts the artwork as the gallery image.
 
 Do not investigate ownership of the artwork or block submission because of the depicted subject. The submission page and API make the uploader confirm sharing permission; leave that confirmation to the user and the server.
 
@@ -57,7 +57,7 @@ Validate the package and configuration without any network call:
 npx tsx scripts/submit-theme.ts /absolute/path/<theme-id>.codex-theme --dry-run
 ```
 
-The dry run confirms the package parses as a valid `codex-theme` document (format, schema version, manifest slug and version, non-empty CSS, ≤30 MB), reports the resolved endpoint, and states whether a key is configured. Fix every reported problem before submitting; if the package itself is invalid, send the user back to codex-theme-creator to re-export rather than editing the package by hand.
+The dry run confirms the package parses as a valid `codex-theme` document (format, schema version, manifest slug and version, non-empty CSS, ≤30 MB), reports the resolved endpoint and whether a key is configured, and reports the gallery `preview` status — `present` (from the package or a `--preview` override) or a warning that the submission would fall back to raw artwork and be refused. Fix every reported problem before submitting; if the package itself is invalid, send the user back to codex-theme-creator to re-export rather than editing the package by hand.
 
 ## Step 4: submit
 
@@ -66,10 +66,11 @@ The API is the **only** agent submission path. Never open `codexthemes.ai/submit
 Submitting publishes the theme on codexthemes.ai immediately — there is no review queue. Resubmitting an already-published theme id is the normal update path (bump `manifest.version`, re-export, submit again). Confirm with the user before uploading, then run:
 
 ```bash
-npx tsx scripts/submit-theme.ts /absolute/path/<theme-id>.codex-theme
+npx tsx scripts/submit-theme.ts /absolute/path/<theme-id>.codex-theme \
+  [--preview /absolute/workspace-screenshot.png]
 ```
 
-The script sends the package as UTF-8 JSON to `POST https://codexthemes.ai/api/themes/submit` with `Authorization: Bearer <key>`. Override the base URL with `CODEXTHEMES_API_BASE` only when the user explicitly targets another environment (for example staging).
+The script sends the package as UTF-8 JSON to `POST https://codexthemes.ai/api/themes/submit` with `Authorization: Bearer <key>`. `--preview` replaces the package's embedded gallery preview with the given full-app screenshot before uploading. Override the base URL with `CODEXTHEMES_API_BASE` only when the user explicitly targets another environment (for example staging).
 
 ## Step 5: report the result
 
