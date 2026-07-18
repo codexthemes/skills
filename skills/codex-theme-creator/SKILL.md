@@ -58,7 +58,12 @@ Choose the layout mode in this order:
 
 Record `decorDensity` as `minimal`, `balanced`, or `rich`. Default to `rich` when the reference has a strong art direction and `balanced` otherwise; use `minimal` only when the user explicitly asks for a background-only or quiet theme. The design playbook defines the element coverage each density requires. A theme that ships one background image and a veil does not satisfy `balanced` or `rich`.
 
-Default `backgroundScope` to `home`. Use `workspace` only when the user explicitly wants artwork on normal task and conversation pages. Never infer a conversation page merely because the page is not home; settings and system pages must not inherit task artwork.
+`backgroundScope` decides where the dominant background artwork appears. It is not a runtime toggle — it is baked into the CSS selectors, so changing it later means rebuilding the theme. Because most users do not know this option exists, surface it explicitly instead of deciding silently:
+
+- When the user has not stated a preference, ask once in plain language before building, for example: "Should the background artwork appear on the home page only (recommended -- keeps conversation text and code clearest), or on conversation pages too?" Recommend `home` as the readability-safe default.
+- Only pick `workspace` when the user chooses it or clearly asks for artwork on task/conversation pages.
+
+State the chosen scope in the design contract you report back, so the user knows what they are getting. Never infer a conversation page merely because the page is not home; settings and system pages must not inherit task artwork. With `workspace`, put a stronger veil behind conversation text so long-form content and code stay readable.
 
 Do not default to dark mode. Match an explicit request or the reference luminance. Ambiguous editorial, floral, portrait, stationery, lifestyle, productivity, and pastel concepts default to light.
 

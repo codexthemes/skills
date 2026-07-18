@@ -56,7 +56,7 @@ npx tsx scripts/switch-theme.ts apply <theme-id> --launch --relaunch
 
 ## Step 4: always hand the user the escape hatch
 
-Every successful apply report must end with the undo hints, for example: "Reply `rollback` to return to the theme you had before, or `restore` for the native Codex look — fully quitting Codex also removes the theme." A user who dislikes the result must never have to ask how to undo it.
+Every successful apply report must also state the background scope from the `active` output, so the user is never surprised that artwork is home-only. Relay `backgroundScopeNote` in plain language, for example: "Background artwork shows on the home page only; the colors apply on every page. To show it on conversation pages too, ask codex-theme-creator to rebuild with backgroundScope: workspace." Then end with the undo hints, for example: "Reply `rollback` to return to the theme you had before, or `restore` for the native Codex look — fully quitting Codex also removes the theme." A user who dislikes the result must never have to ask how to undo it or how to change the scope.
 
 Every apply records the previously active theme. When the user replies `rollback` (or says the new theme is broken, ugly, or not what they wanted):
 

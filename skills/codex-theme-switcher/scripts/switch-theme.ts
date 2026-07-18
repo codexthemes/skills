@@ -594,6 +594,10 @@ async function apply(options: Options): Promise<void> {
     themeId: manifest.id,
     port: found.port,
     pagesThemed: registrations.length,
+    backgroundScope,
+    backgroundScopeNote: backgroundScope === 'home'
+      ? 'Background artwork shows on the home page only; colors and materials apply everywhere. To show artwork on conversation pages too, rebuild the theme with codex-theme-creator using backgroundScope: workspace.'
+      : 'Background artwork shows on the home and conversation pages. To limit it to the home page, rebuild the theme with codex-theme-creator using backgroundScope: home.',
     readability: failures.length === 0 ? 'pass' : { failed: failures.length, kept: true, worst: failures.slice(0, 5) },
   }, null, 2));
 }
