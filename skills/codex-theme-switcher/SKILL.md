@@ -54,13 +54,17 @@ npx tsx scripts/switch-theme.ts apply <theme-id> --launch --relaunch
 
 `--relaunch` restarts Codex even though an endpoint is already live, which evicts every stale session, then injects the requested theme. It follows the same `scheduled` → `status` verification flow.
 
-## Step 4: restore when asked
+## Step 4: always hand the user the escape hatch
+
+Every successful apply report must end with the restore hint, for example: "Reply `restore` at any time and I will return Codex to its native look — fully quitting Codex also removes the theme." A user who dislikes the result must never have to ask how to undo it.
+
+When the user asks to restore (or replies `restore`):
 
 ```bash
 npx tsx scripts/switch-theme.ts restore
 ```
 
-Removes the injected style and page markers from every page and clears the runtime state. A full application quit also drops the theme; reapply with `--launch` when the user wants it back.
+Removes the injected style and page markers from every page and clears the runtime state — no restart needed. A full application quit also drops the theme; reapply with `--launch` when the user wants it back. If the theme keeps reappearing after restore, a stale session is re-injecting it — use the `--launch --relaunch` flow from Step 2 with the user's permission, or have them fully quit and reopen Codex.
 
 ## Boundaries
 
