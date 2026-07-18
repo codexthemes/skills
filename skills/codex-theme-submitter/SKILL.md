@@ -13,6 +13,11 @@ Pick the path by what the user shared, not by what exists on disk:
 
 - an exported `.codex-theme` package or a local theme id → **package submission**, Steps 1–5.
 - a URL of a theme showcase (repo, gallery, post) → **link submission**, see "Submit a linked theme from a URL". A link submission needs no package, no export, and no local theme source — never search `~/.codexthemes/exports/` for a match, never ask the user to export a package first, and never block on a "missing" package. Use the package path for a URL share only if the user explicitly says they want the installable package published.
+- nothing specific ("submit my theme") → **discover locally, then ask**:
+  1. List `~/.codexthemes/exports/*.codex-theme`. Exactly one package → name it (id, version, modified time) and confirm it is the one to submit. Several → show the list and ask which one.
+  2. No exports but `~/.codexthemes/themes/` holds theme sources → tell the user which sources exist and offer two options: export one with codex-theme-creator and submit the package, or share a URL of the theme's page for a link submission.
+  3. Nothing local at all → ask for the URL of the theme to list (link submission), or point them to codex-theme-creator to build one first.
+  Ask once with the concrete findings; never guess which theme the user meant, and never silently pick one of several.
 
 ## Step 1: locate the package
 
