@@ -88,18 +88,20 @@ Never retry a failed submission in a loop, and never claim a theme was submitted
 When the user shares a URL of a theme showcase (a repo, gallery page, or post), publish it as a linked directory entry (skin). This path is complete on its own: it requires no `.codex-theme` package, no export, and no local theme source, and it must never stall waiting for one — the extracted name, author, preview image, and the URL itself are the entire submission.
 
 1. **Extract**: fetch the page and pull out the theme name, the author (page author, repo owner, or byline), and the best preview image — a capture of the themed workspace (window with sidebar and content), preferring `og:image` or a README/screenshot image. Never use a bare wallpaper or logo as the preview.
-2. **Download the preview** to a temporary file (PNG, JPEG, or WebP, under 10 MB). Do not save it into a project workspace.
-3. **Confirm with the user** before uploading: show the extracted name, author, source URL, and which image will be the preview. Let them correct any field.
-4. **Submit** (API key required, same as Step 2; the same no-web-form rule applies):
+2. **Derive the slug**: a short lowercase ASCII slug from the theme name — it becomes the public URL `https://codexthemes.ai/skins/<slug>`. Romanize or translate non-Latin names (功夫女足 → `kungfu-womens-football`); never let it fall back to a timestamp id, and never use unrelated words.
+3. **Download the preview** to a temporary file (PNG, JPEG, or WebP, under 10 MB). Do not save it into a project workspace.
+4. **Confirm with the user** before uploading: show the extracted name, slug, author, source URL, and which image will be the preview. Let them correct any field.
+5. **Submit** (API key required, same as Step 2; the same no-web-form rule applies):
 
 ```bash
 npx tsx scripts/submit-skin.ts \
   --name "<theme name>" \
+  --slug <ascii-slug> \
   --source-url "<the user's URL>" \
   --preview /absolute/preview.png \
   [--author "<author>"] [--description "<one-line description>"] [--mode light|dark|mixed] [--dry-run]
 ```
 
-5. **Report**: on success the response contains the public listing URL (`https://codexthemes.ai/skins/<slug>`) — always give the user that link. Resubmitting the same name updates the published entry in place.
+6. **Report**: on success the response contains the public listing URL (`https://codexthemes.ai/skins/<slug>`) — always give the user that link. Resubmitting the same slug updates the published entry in place.
 
 If the page has no usable workspace preview image, stop and ask the user to provide one instead of substituting artwork or generating a mockup.

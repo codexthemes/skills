@@ -18,6 +18,7 @@ const imageTypes = new Map([
 
 export interface SkinOptions {
   name: string;
+  slug: string;
   sourceUrl: string;
   previewPath: string;
   author?: string;
@@ -27,7 +28,7 @@ export interface SkinOptions {
 }
 
 function parseArgs(argv: string[]): SkinOptions {
-  const options: SkinOptions = { name: '', sourceUrl: '', previewPath: '', dryRun: false };
+  const options: SkinOptions = { name: '', slug: '', sourceUrl: '', previewPath: '', dryRun: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--dry-run') {
@@ -37,6 +38,7 @@ function parseArgs(argv: string[]): SkinOptions {
     const value = argv[++index];
     if (value === undefined) throw new Error(`${arg} requires a value`);
     if (arg === '--name') options.name = value;
+    else if (arg === '--slug') options.slug = value;
     else if (arg === '--source-url') options.sourceUrl = value;
     else if (arg === '--preview') options.previewPath = path.resolve(value);
     else if (arg === '--author') options.author = value;
@@ -44,9 +46,9 @@ function parseArgs(argv: string[]): SkinOptions {
     else if (arg === '--mode') options.mode = value;
     else throw new Error(`Unknown argument: ${arg}`);
   }
-  if (!options.name || !options.sourceUrl || !options.previewPath) {
+  if (!options.name || !options.slug || !options.sourceUrl || !options.previewPath) {
     throw new Error(
-      'Usage: submit-skin.ts --name "<skin name>" --source-url <https://...> --preview /absolute/preview.png [--author "<name>"] [--description "<text>"] [--mode light|dark|mixed] [--dry-run]',
+      'Usage: submit-skin.ts --name "<skin name>" --slug <ascii-slug> --source-url <https://...> --preview /absolute/preview.png [--author "<name>"] [--description "<text>"] [--mode light|dark|mixed] [--dry-run]',
     );
   }
   return options;
@@ -56,6 +58,9 @@ export function validateSkinOptions(options: SkinOptions): string[] {
   const errors: string[] = [];
   if (!options.name.trim() || options.name.trim().length > 120) {
     errors.push('name must be a non-empty string of at most 120 characters');
+  }
+  if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(options.slug)) {
+    errors.push('slug must be a lowercase ASCII slug (letters, digits, hyphens) derived from the theme name');
   }
   try {
     const url = new URL(options.sourceUrl);
@@ -80,6 +85,7 @@ async function buildBody(options: SkinOptions): Promise<string> {
     format: 'codex-skin',
     schemaVersion: 1,
     name: options.name.trim(),
+    slug: options.slug,
     ...(options.author?.trim() ? { author: options.author.trim() } : {}),
     ...(options.description?.trim() ? { description: options.description.trim() } : {}),
     ...(options.mode ? { mode: options.mode } : {}),
@@ -103,6 +109,7 @@ export async function submitSkin(options: SkinOptions): Promise<Record<string, u
     return {
       status: 'dry-run',
       name: options.name.trim(),
+      slug: options.slug,
       sourceUrl: options.sourceUrl,
       previewPath: options.previewPath,
       endpoint,

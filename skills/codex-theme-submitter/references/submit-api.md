@@ -55,6 +55,7 @@ The body is the portable `.codex-theme` package exactly as exported by codex-the
   "format": "codex-skin",
   "schemaVersion": 1,
   "name": "<skin name>",
+  "slug": "<ascii-slug>",
   "author": "<author>",
   "description": "<one-line description>",
   "mode": "dark",
@@ -63,7 +64,7 @@ The body is the portable `.codex-theme` package exactly as exported by codex-the
 }
 ```
 
-`name`, `sourceUrl` (http/https), and `preview` (PNG/JPEG/WebP ≤ 10 MB, a themed workspace capture) are required; `author`, `description`, and `mode` are optional. The `201` response mirrors the theme response with `url` pointing at `https://codexthemes.ai/skins/<slug>`; resubmitting the same name updates the entry in place.
+`name`, `sourceUrl` (http/https), and `preview` (PNG/JPEG/WebP ≤ 10 MB, a themed workspace capture) are required. `slug` sets the public URL path and should always be sent — a lowercase ASCII slug derived from the theme name (romanize or translate non-Latin names); without it the server slugifies `name`, and a fully non-Latin name degrades to a timestamp id. `author`, `description`, and `mode` are optional. The `201` response mirrors the theme response with `url` pointing at `https://codexthemes.ai/skins/<slug>`; resubmitting the same name updates the entry in place.
 
 ## Responses
 

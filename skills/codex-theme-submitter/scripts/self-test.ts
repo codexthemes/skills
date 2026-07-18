@@ -106,12 +106,15 @@ try {
   await fs.writeFile(previewPath, Buffer.from('89504e470d0a1a0a', 'hex'));
   const validSkin = {
     name: 'Test Skin',
+    slug: 'test-skin',
     sourceUrl: 'https://example.com/theme',
     previewPath,
     dryRun: true,
   };
   assert.deepEqual(validateSkinOptions(validSkin), []);
   assert.match(validateSkinOptions({ ...validSkin, name: ' ' }).join('\n'), /name/);
+  assert.match(validateSkinOptions({ ...validSkin, slug: '功夫女足' }).join('\n'), /slug/);
+  assert.match(validateSkinOptions({ ...validSkin, slug: 'Bad Slug' }).join('\n'), /slug/);
   assert.match(validateSkinOptions({ ...validSkin, sourceUrl: 'ftp://x' }).join('\n'), /source-url/);
   assert.match(validateSkinOptions({ ...validSkin, previewPath: '/tmp/p.gif' }).join('\n'), /preview/);
   assert.match(validateSkinOptions({ ...validSkin, mode: 'sepia' }).join('\n'), /mode/);
@@ -119,6 +122,7 @@ try {
   const skinDry = await submitSkin(validSkin);
   assert.equal(skinDry.status, 'dry-run');
   assert.equal(skinDry.name, 'Test Skin');
+  assert.equal(skinDry.slug, 'test-skin');
   assert.equal(skinDry.endpoint, submitEndpoint());
   await assert.rejects(submitSkin({ ...validSkin, sourceUrl: 'not-a-url' }), /source-url/);
 
