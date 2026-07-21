@@ -1,0 +1,4 @@
+interface:
+  display_name: "WorkBuddy Theme Manager"
+  short_description: "Convert and apply local themes to WorkBuddy"
+  default_prompt: "Use $workbuddy-theme-manager to convert my installed Codex theme or .codex-theme package and apply it to WorkBuddy."

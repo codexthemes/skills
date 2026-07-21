@@ -37,6 +37,12 @@ Install `codex-theme-switcher` to apply, switch, and restore installed themes wi
 npx skills add codexthemes/skills --skill codex-theme-switcher -g -a codex
 ```
 
+Install `workbuddy-theme-manager` to convert `.codex-theme` packages into the standalone `.workbuddy-theme` format and apply them to Tencent WorkBuddy without a third-party theme runtime:
+
+```bash
+npx skills add codexthemes/skills --skill workbuddy-theme-manager -g
+```
+
 List the skills available in this repository:
 
 ```bash
@@ -106,6 +112,18 @@ Both work anonymously within a free API quota; when the quota or rate limit is h
 Use $codex-theme-switcher to switch my Codex theme to noir-anime.
 ```
 
+`workbuddy-theme-manager` provides a separate, self-contained WorkBuddy path. It converts either a `.codex-theme` package or an installed `~/.codexthemes/themes/<id>/` source into WorkBuddy-specific CSS, writes packages under `~/.codexthemes/workbuddy-exports/`, and owns its loopback-only CDP injection and restore lifecycle:
+
+```text
+Use $workbuddy-theme-manager to convert ~/.codexthemes/exports/noir-anime.codex-theme and apply it to WorkBuddy.
+```
+
+For a theme downloaded by `codex-theme-installer`, no intermediate export is needed:
+
+```text
+Use $codex-theme-installer to install portal-panic, then use $workbuddy-theme-manager to convert the installed theme and apply it to WorkBuddy.
+```
+
 ## Repository layout
 
 ```text
@@ -133,6 +151,12 @@ skills/codex-theme-installer/
 skills/codex-theme-switcher/
 ├── SKILL.md
 ├── agents/openai.yaml
+└── scripts/
+skills/workbuddy-theme-manager/
+├── SKILL.md
+├── agents/openai.yaml
+├── assets/
+├── references/
 └── scripts/
 ```
 
